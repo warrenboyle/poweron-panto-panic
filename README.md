@@ -26,3 +26,9 @@ The whole game is one self-contained `index.html`. All art is drawn in code and 
 The PowerON logo (`poweron-logo.webp`) is from [poweronenergy.ca](https://www.poweronenergy.ca/).
 
 Made by PowerON.
+
+## Releasing updates
+GitHub Pages lets browsers cache files for up to about 10 minutes, and there is nothing to purge. To make sure players get the newest copy:
+- Bump the build number in `version.json` and in `index.html` (the `BUILD` constant and the `ppp-build` meta tag). The logo URLs pick up `?v=<build>` from `BUILD`.
+- Open copies of the game check `version.json` (never cached) on load and when the tab comes back. If a newer build is listed, the game reloads once onto `?v=<build>`, but never in the middle of a run or on the results screen.
+- `leaderboard.json` is always fetched with a timestamp and `cache: "no-store"`.
