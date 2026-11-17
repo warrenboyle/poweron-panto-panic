@@ -5,67 +5,74 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>PowerON Panto Panic</title>
 <meta name="description" content="A 40-second electric bus challenge. Pick your transit agency, pick up riders, stay on schedule, and charge under the pantograph before your battery runs flat.">
-<meta name="theme-color" content="#1b1530">
+<meta name="theme-color" content="#000033">
 <meta property="og:title" content="PowerON Panto Panic">
 <meta property="og:description" content="Drive an electric bus. Pick up riders. Stay on time. Don't run flat.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%231b1530'/%3E%3Cpath d='M9 1 3 9h4l-1 6 6-8H8z' fill='%23ffd23f'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23000033'/%3E%3Cpath d='M9 1 3 9h4l-1 6 6-8H8z' fill='%2366cc00'/%3E%3C/svg%3E">
 <!-- PowerON Panto Panic. Self-contained: no external requests, no trackers.
      All art is drawn in code; all sound is generated with the Web Audio API. Records stay in this browser (localStorage). -->
 <style>
-:root{--ink:#1b1530;--panel:#fffaf0;--volt:#ffd23f;--go:#27c26a;--chg:#2fd6a0;--bad:#ff5a4a;--sky:#7fd0ff;--muted:#5d527c}
+:root{--ink:#000033;--panel:#fbfcff;--volt:#ffd23f;--go:#66cc00;--blue:#0065cc;--chg:#0065cc;--bad:#ff5a4a;--sky:#7fd0ff;--muted:#5a5a7a;--grey:#8d8da8}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
-body{background:var(--ink);color:var(--ink);font-family:ui-rounded,"SF Pro Rounded","Nunito","Trebuchet MS",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+body{background:var(--ink);color:var(--ink);font-family:"Poppins",ui-rounded,"SF Pro Rounded","Nunito","Trebuchet MS",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible{outline:4px solid var(--sky);outline-offset:3px}
 .screen{position:absolute;inset:0;display:none;flex-direction:column}
 .screen.on{display:flex}
-.scroll{overflow-y:auto;align-items:center;padding:max(16px,env(safe-area-inset-top)) 14px 40px;background:linear-gradient(#ffb36b,#ff8fa3 30%,#9b7bff 62%,#3b2a7a 62%,#2a1f5c)}
+.scroll{overflow-y:auto;align-items:center;padding:max(16px,env(safe-area-inset-top)) 14px 40px;background:linear-gradient(#0065cc,#0b3f99 38%,#000033 78%)}
 .title{font-weight:900;font-size:clamp(42px,10vw,84px);letter-spacing:1px;margin:8px 0 0;color:#fff;text-align:center;line-height:1;text-shadow:0 4px 0 var(--ink),4px 0 0 var(--ink),-4px 0 0 var(--ink),0 -4px 0 var(--ink),4px 4px 0 var(--ink),-4px 4px 0 var(--ink),0 10px 0 rgba(27,21,48,.35);transform:rotate(-2deg)}
-.title span{color:var(--volt)}
-.title em{font-style:normal;display:block;font-size:.55em;letter-spacing:2px;color:#bff3ff}
+.title span{color:var(--go)}
+.logo{width:min(250px,62vw);height:auto;display:block;margin:6px auto 2px}
+.brandline{font-weight:800;color:#cfe0ff;font-size:14px;text-align:center;margin:12px 8px 0}
+.brandline b{color:var(--go)}
+footer a,.fine a{color:var(--go);text-decoration:none}
+.pwr{display:inline-flex;align-items:center;gap:10px;margin-top:14px;background:var(--ink);border-radius:12px;padding:7px 14px;text-decoration:none;color:#cfe0ff;font-weight:800;font-size:13px}
+.pwr img{height:30px;width:auto}
+.pwr:hover{outline:3px solid var(--go)}
+.title em{font-style:normal;display:block;font-size:.6em;letter-spacing:3px;color:#fff}
 #titleArt{width:min(560px,92vw);aspect-ratio:2/1;image-rendering:pixelated;image-rendering:crisp-edges;border:5px solid var(--ink);border-radius:18px;box-shadow:0 8px 0 var(--ink);margin-top:18px;background:#7fd0ff}
 .tag{font-weight:900;color:#fff;font-size:clamp(16px,3.6vw,20px);text-align:center;margin:18px 6px 4px;text-shadow:0 2px 0 var(--ink),2px 0 0 var(--ink),-2px 0 0 var(--ink),0 -2px 0 var(--ink)}
-.big{font-weight:900;font-size:26px;padding:14px 34px;border:4px solid var(--ink);border-radius:18px;background:var(--go);color:#fff;box-shadow:0 7px 0 var(--ink);text-shadow:0 2px 0 rgba(0,0,0,.25);min-height:64px}
+.big{font-weight:900;font-size:26px;padding:14px 34px;border:4px solid var(--ink);border-radius:18px;background:var(--go);color:var(--ink);box-shadow:0 7px 0 var(--ink);min-height:64px}
 .big.alt{background:#ff4f8b}
 .big.plain{background:#fff;color:var(--ink);text-shadow:none}
 .big:active{transform:translateY(4px);box-shadow:0 3px 0 var(--ink)}
 .row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin:16px 0 4px}
 .snd{font-weight:900;font-size:15px;background:#fff;border:3px solid var(--ink);border-radius:999px;padding:6px 14px;box-shadow:0 4px 0 var(--ink)}
-footer{margin-top:auto;padding-top:22px;font-weight:800;font-size:12px;color:#d9d2ff;letter-spacing:.5px;text-align:center}
+footer{margin-top:auto;padding-top:22px;font-weight:800;font-size:12px;color:#cfe0ff;letter-spacing:.5px;text-align:center}
 h2.pick{margin:6px 0 12px;font-size:clamp(24px,5vw,34px);font-weight:900;color:#fff;text-align:center;text-shadow:0 3px 0 var(--ink),2px 0 0 var(--ink),-2px 0 0 var(--ink),0 -2px 0 var(--ink)}
 .ags{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;width:100%;max-width:820px}
 .ag{background:var(--panel);border:4px solid var(--ink);border-radius:16px;box-shadow:0 6px 0 var(--ink);padding:8px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
 .ag canvas{width:100%;aspect-ratio:5/4;image-rendering:pixelated;image-rendering:crisp-edges;border:3px solid var(--ink);border-radius:10px}
 .ag b{font-size:18px;font-weight:900;line-height:1.1;margin-top:2px}
 .ag small{font-size:12px;color:var(--muted);font-weight:800}
-.ag .best{font-size:13px;font-weight:900;background:var(--ink);color:var(--volt);border-radius:999px;padding:2px 10px;margin-top:2px}
+.ag .best{font-size:13px;font-weight:900;background:var(--ink);color:var(--go);border-radius:999px;padding:2px 10px;margin-top:2px}
 .ag:hover{transform:translateY(-3px)}
 .ag:active{transform:translateY(3px);box-shadow:0 2px 0 var(--ink)}
 .howto{max-width:640px;background:rgba(255,255,255,.94);border:4px solid var(--ink);border-radius:16px;padding:10px 16px;margin-top:18px;font-weight:700;font-size:15px;line-height:1.45}
 .howto ol{margin:4px 0;padding-left:22px}
 .howto kbd{background:var(--ink);color:#fff;border-radius:5px;padding:0 5px;font-size:13px}
-.fine{font-size:11px;color:#d9d2ff;font-weight:700;margin:10px 0 0;text-align:center}
+.fine{font-size:11px;color:#cfe0ff;font-weight:700;margin:10px 0 0;text-align:center}
 @media (max-width:640px){.ags{grid-template-columns:repeat(2,minmax(0,1fr))}.ag b{font-size:16px}}
 /* game */
 #game{background:var(--ink)}
 .hud{display:flex;align-items:center;gap:8px;padding:max(8px,env(safe-area-inset-top)) 10px 8px;background:var(--ink);color:#fff;font-weight:900;flex-wrap:wrap;z-index:3}
 .hud .ag1{font-size:15px;line-height:1.1;min-width:0;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hud .ag1 small{display:block;font-size:11px;color:#c9bfff}
+.hud .ag1 small{display:block;font-size:11px;color:#9fc3ff}
 .pill{background:#fff;color:var(--ink);border-radius:10px;padding:4px 9px;font-size:16px;white-space:nowrap;font-variant-numeric:tabular-nums}
-.next{flex:1;min-width:150px;background:#2b2350;border-radius:10px;padding:3px 10px;line-height:1.15;white-space:nowrap;overflow:hidden}
-.next small{display:block;font-size:11px;color:#c9bfff}
+.next{flex:1;min-width:150px;background:#0b1a5c;border-radius:10px;padding:3px 10px;line-height:1.15;white-space:nowrap;overflow:hidden}
+.next small{display:block;font-size:11px;color:#9fc3ff}
 .next b{font-size:15px}
-.next .due{font-size:13px;margin-left:6px;color:var(--volt)}
-.next .st{font-size:12px;margin-left:6px;border-radius:6px;padding:0 5px;background:#4a416b}
-.st.ok{background:var(--go)!important}.st.late{background:var(--bad)!important}.st.early{background:#2e8fe0!important}
+.next .due{font-size:13px;margin-left:6px;color:var(--go)}
+.next .st{font-size:12px;margin-left:6px;border-radius:6px;padding:0 5px;background:#3a3a5a}
+.st.ok{background:var(--go)!important;color:var(--ink)}.st.late{background:var(--bad)!important}.st.early{background:var(--blue)!important}
 .batt{display:flex;align-items:center;gap:6px}
 .bar{width:84px;height:22px;border:3px solid #fff;border-radius:5px;position:relative;padding:2px}
 .bar:after{content:"";position:absolute;right:-7px;top:5px;width:4px;height:7px;background:#fff;border-radius:0 2px 2px 0}
 .bar i{display:block;height:100%;background:var(--go);border-radius:2px;transition:background .2s}
 .bar.low i{background:var(--volt)}.bar.crit i{background:var(--bad)}
 .bar.crit{animation:pulse .5s infinite alternate}
-.bar.chg i{background:repeating-linear-gradient(90deg,var(--chg) 0 6px,#bfffe9 6px 9px)}
+.bar.chg i{background:repeating-linear-gradient(90deg,var(--go) 0 6px,#d9ffb0 6px 9px)}
 @keyframes pulse{to{transform:scale(1.08)}}
 .batt b{font-size:15px;min-width:42px;font-variant-numeric:tabular-nums}
 .ib{width:42px;height:42px;border-radius:12px;border:3px solid #fff;background:transparent;color:#fff;font-size:19px;display:grid;place-items:center;padding:0;flex-shrink:0}
@@ -74,18 +81,18 @@ h2.pick{margin:6px 0 12px;font-size:clamp(24px,5vw,34px);font-weight:900;color:#
 .toast{position:absolute;left:50%;top:44px;transform:translateX(-50%);background:#fff;border:4px solid var(--ink);border-radius:14px;padding:6px 14px;font-weight:900;font-size:17px;box-shadow:0 5px 0 var(--ink);max-width:92%;text-align:center;pointer-events:none;opacity:0;transition:opacity .2s;white-space:nowrap}
 .toast.on{opacity:1}
 .ctrls{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px max(12px,env(safe-area-inset-bottom));background:var(--ink);z-index:3}
-.hint{color:#e6e0ff;font-weight:800;font-size:14px;line-height:1.25;text-align:center;flex:1;min-width:0}
+.hint{color:#dbe7ff;font-weight:800;font-size:14px;line-height:1.25;text-align:center;flex:1;min-width:0}
 .pedal{width:132px;height:84px;border:4px solid #fff;border-radius:20px;font-weight:900;font-size:26px;line-height:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0;touch-action:none;flex-shrink:0}
 .pedal small{font-size:12px;font-weight:800;opacity:.85}
-.pedal.go{background:var(--go);color:#fff;box-shadow:0 7px 0 #137a3e;text-shadow:0 2px 0 rgba(0,0,0,.25)}
-.pedal.go.down{transform:translateY(5px);box-shadow:0 2px 0 #137a3e}
-.pedal.chg{background:var(--chg);color:var(--ink);box-shadow:0 7px 0 #138a66;font-size:20px}
-.pedal.chg.down{transform:translateY(5px);box-shadow:0 2px 0 #138a66}
-.pedal.chg:disabled{background:#4a416b;color:#8a80b0;border-color:#8a80b0;box-shadow:0 7px 0 #2c2547;cursor:default}
+.pedal.go{background:var(--go);color:var(--ink);box-shadow:0 7px 0 #3d7a00}
+.pedal.go.down{transform:translateY(5px);box-shadow:0 2px 0 #3d7a00}
+.pedal.chg{background:var(--chg);color:#fff;box-shadow:0 7px 0 #003d7a;font-size:20px}
+.pedal.chg.down{transform:translateY(5px);box-shadow:0 2px 0 #003d7a}
+.pedal.chg:disabled{background:#2c2c4a;color:var(--grey);border-color:var(--grey);box-shadow:0 7px 0 #15152e;cursor:default}
 .pedal.chg.ready{animation:pulse .45s infinite alternate}
 @media (max-width:560px){.hud{gap:6px;padding-left:8px;padding-right:8px;justify-content:space-between}.hud .ag1{display:none}.next{order:9;flex-basis:100%}.bar{width:62px}.pill{font-size:14px;padding:3px 7px}.ib{width:38px;height:38px}.pedal{width:112px;height:80px}.hint{font-size:12px}}
 /* results */
-.ov{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(20,12,44,.55);z-index:5;padding:12px}
+.ov{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,51,.55);z-index:5;padding:12px}
 .ov.on{display:flex}
 .card{background:var(--panel);border:5px solid var(--ink);border-radius:22px;box-shadow:0 9px 0 var(--ink);padding:14px 18px 18px;width:min(520px,100%);text-align:center;max-height:100%;overflow:auto}
 .card h3{font-size:clamp(28px,7vw,40px);margin:4px 0;font-weight:900}
@@ -95,7 +102,7 @@ h2.pick{margin:6px 0 12px;font-size:clamp(24px,5vw,34px);font-weight:900;color:#
 .card td:last-child{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .card tr.tot td{font-size:22px;font-weight:900;border-bottom:none;padding-top:8px}
 .neg{color:#c22}
-.newrec{display:inline-block;background:var(--volt);border:3px solid var(--ink);border-radius:999px;padding:3px 12px;font-weight:900;margin-top:8px}
+.newrec{display:inline-block;background:var(--go);border:3px solid var(--ink);border-radius:999px;padding:3px 12px;font-weight:900;margin-top:8px}
 .card .best2{font-weight:800;color:var(--muted);margin-top:6px}
 .card .row{margin-top:12px}
 .card .big{font-size:20px;padding:10px 18px;min-height:54px}
@@ -104,14 +111,16 @@ h2.pick{margin:6px 0 12px;font-size:clamp(24px,5vw,34px);font-weight:900;color:#
 <body>
 
 <div id="title" class="screen scroll on">
-  <h1 class="title">PowerON<em>PANTO</em><span>PANIC!</span></h1>
+  <img class="logo" src="poweron-logo.webp" alt="PowerON Energy Solutions, an OPG Company" width="832" height="339">
+  <h1 class="title"><em>PANTO</em><span>PANIC!</span></h1>
   <canvas id="titleArt" width="240" height="120" aria-label="Pixel art electric bus charging under a pantograph"></canvas>
   <p class="tag">Drive an electric bus. Pick up riders. Stay on time. Don't run flat.</p>
   <div class="row">
     <button class="big" id="playBtn">Play</button>
   </div>
   <div class="row"><button class="snd" id="muteT">🔊 Sound on</button></div>
-  <footer>Made by PowerON</footer>
+  <p class="brandline">From <b>PowerON</b>, Canada's end-to-end fleet electrification partner.</p>
+  <footer>Made by <a href="https://www.poweronenergy.ca/" target="_blank" rel="noopener">PowerON</a></footer>
 </div>
 
 <div id="agency" class="screen scroll">
@@ -128,7 +137,7 @@ h2.pick{margin:6px 0 12px;font-size:clamp(24px,5vw,34px);font-weight:900;color:#
   </div>
   <div class="row"><button class="big plain" id="backTitle">Back</button></div>
   <p class="fine">Agency names are used for fun. This game is not affiliated with any transit agency.</p>
-  <footer>Made by PowerON</footer>
+  <footer>Made by <a href="https://www.poweronenergy.ca/" target="_blank" rel="noopener">PowerON</a></footer>
 </div>
 
 <div id="game" class="screen">
@@ -297,6 +306,9 @@ function drawPerson(x,y,k,wave,sad){ /* x center, y feet */
   if(k%4===1)R(x-3,y-8,1,4,"#6b4a2b"); /* bag */
   if(sad){R(x-1,y-18,1,3,"#ff3030");R(x-1,y-14,1,1,"#ff3030");}
 }
+var PF={P:["111","101","111","100","100"],o:["000","111","101","101","111"],w:["00000","10001","10101","10101","01010"],e:["000","111","111","100","111"],r:["000","111","100","100","100"],O:["111","101","101","101","111"],N:["1001","1101","1011","1001","1001"]};
+function pixW(t){var w=0;for(var i=0;i<t.length;i++)w+=PF[t[i]][0].length+1;return w-1;}
+function pixText(x,y,t,c){for(var i=0;i<t.length;i++){var g=PF[t[i]];for(var yy=0;yy<5;yy++)for(var xx=0;xx<g[yy].length;xx++)if(g[yy][xx]==="1")R(x+xx,y+yy,1,1,c);x+=g[0].length+1;}}
 function landmark(type,x,b,col,hi){
   switch(type){
   case "ttc": R(x+9,b-104,3,104,col);R(x+6,b-78,9,6,col);R(x+5,b-76,11,2,hi);R(x+8,b-88,5,2,col);R(x+10,b-122,1,18,col);R(x+7,b-30,7,30,col);break;
@@ -412,6 +424,7 @@ function finish(){
 }
 
 /* ================= RENDER ================= */
+function busScreenFront(){return Math.round(LW*0.30+BUSL/2);} /* bus centre sits ~30% across the screen */
 function resize(){
   var st=$("stage"),w=st.clientWidth,h=st.clientHeight;if(!w||!h)return;
   DPR=Math.min(2,window.devicePixelRatio||1);
@@ -464,7 +477,7 @@ function drawWorld(g,ag,cam,W,H,t,state){
   /* painted zones */
   function box(l,r,col,lab){var L=X(l),Rr=X(r);if(Rr<-10||L>W+10)return;var a=0.25;R(L,129,Rr-L,33,col.replace("1)",a+")"));R(L,129,2,35,col);R(Rr-2,129,2,35,col);for(var dx=L;dx<Rr;dx+=6)R(dx,163,3,2,col);}
   state.stops.forEach(function(st){var hot=!st.done&&st.n>0&&inZ(zoneStop(st.x));box(st.x-62,st.x+28,hot?"rgba(255,240,120,1)":"rgba(255,210,63,1)");});
-  box(CHGX-58,CHGX+22,inZ(zoneChg())?"rgba(120,255,200,1)":"rgba(47,214,160,1)");
+  box(CHGX-58,CHGX+22,inZ(zoneChg())?"rgba(170,255,90,1)":"rgba(102,204,0,1)");
   box(TERMX-64,TERMX+36,"rgba(255,255,255,1)");
   /* stop poles, shelters, riders */
   state.stops.forEach(function(st,i){var px=X(st.x);if(px<-60||px>W+40)return;
@@ -477,8 +490,9 @@ function drawWorld(g,ag,cam,W,H,t,state){
     R(tx-50,92,60,20,"#4a4f60");R(tx-48,94,56,8,"#2a3a52");R(tx-50,90,60,3,"#ffd23f");R(tx+46,112,2,14,"#c22");R(tx+44,118,6,3,"#fff");}
   /* charger mast (behind bus) */
   var cx=X(CHGX);if(cx>-60&&cx<W+60){
-    R(cx+26,60,3,66,"#5a6270");R(cx-12,60,41,4,"#6a7280");R(cx-12,64,41,1,"#3f4550");
-    R(cx+31,98,12,26,"#1f8a6a");R(cx+33,101,8,6,"#bfffe9");R(cx+36,110,2,1,"#ffd23f");R(cx+35,111,2,1,"#ffd23f");R(cx+34,112,4,1,"#ffd23f");
+    R(cx+26,60,3,66,"#1a2a5a");R(cx-12,60,41,4,"#13235a");R(cx-12,64,41,1,"#66cc00");
+    R(cx+30,94,36,30,"#000033");R(cx+30,94,36,1,"#2a3a7a");R(cx+30,123,36,1,"#66cc00");pixText(cx+33,97,"Power","#ffffff");pixText(cx+33+pixW("Power")+1,97,"ON","#66cc00");
+    R(cx+33,105,16,10,"#0b1a5c");R(cx+34,106,Math.round(14*(state.bat==null?80:state.bat)/100),8,state.charging&&state.panto>=1?"#66cc00":"#2f5a1a");R(cx+56,105,1,1,"#66cc00");R(cx+55,106,2,1,"#66cc00");R(cx+54,107,4,1,"#66cc00");R(cx+55,108,2,1,"#66cc00");R(cx+54,109,2,1,"#66cc00");R(cx+40,117,4,6,"#2c2c3a");
     var hy=Math.round(78+(123-78)*state.panto);
     R(cx-3,65,7,2,"#3f4550");for(var yy=67;yy<hy;yy++){var f=(yy-67)/(hy-67),wv=Math.round(6*Math.sin(f*Math.PI));R(cx-wv-1,yy,2,1,"#2d2d2d");R(cx+wv,yy,2,1,"#2d2d2d");}if(hy-67>8){var my2=Math.round((67+hy)/2);R(cx-7,my2,14,1,"#555");}
     R(cx-8,hy,16,2,"#3a3a3a");R(cx-7,hy+1,14,1,"#c87a3a");
@@ -489,7 +503,7 @@ function drawWorld(g,ag,cam,W,H,t,state){
   if(state.shake>0)bx0+=Math.round(Math.sin(t*80)*1);
   var doors=0;if(state.dwell){var d=state.dwell;doors=d.phase==="open"?Math.min(1,d.t/0.3):d.phase==="board"?1:Math.max(0,1-d.t/0.3);}
   drawBus(bx0,128+bob,state.ag.bus,{doors:doors,brake:!state.throttle&&state.v>1,rot:state.rot});
-  if(state.charging&&state.panto>=1){var gl=Math.floor(t*8)%2;R(bx0+44,124,12,1,gl?"#bfffe9":"#2fd6a0");}
+  if(state.charging&&state.panto>=1){var gl=Math.floor(t*8)%2;R(bx0+44,124,12,1,gl?"#d9ffb0":"#66cc00");}
   /* front stop markers ahead of others */
   state.stops.forEach(function(st){var px=X(st.x);if(px>-10&&px<W+10)R(px+28,129,2,2,"#ffd23f");});
   /* weather */
@@ -499,7 +513,7 @@ function drawWorld(g,ag,cam,W,H,t,state){
 }
 function render(t){
   if(!S)return;
-  var cam=S.x-Math.min(LW*0.55,LW-130);
+  var cam=Math.round(S.x-busScreenFront());
   drawWorld(lg,S.ag,cam,LW,LH,t,S);
   ctx.imageSmoothingEnabled=false;ctx.fillStyle="#000";ctx.fillRect(0,0,cv.width,cv.height);
   var sc=SC*DPR,oy=OFFY*DPR;
@@ -509,17 +523,17 @@ function render(t){
   ctx.textAlign="center";ctx.textBaseline="middle";
   /* mini map */
   var mx0=14*DPR,mx1=cv.width-14*DPR,my=oy+12*DPR,mw=mx1-mx0,M=function(wx){return mx0+mw*Math.min(1,Math.max(0,(wx-BUSL)/(TERMX+20-BUSL)));};
-  ctx.fillStyle="rgba(27,21,48,.75)";ctx.fillRect(mx0-6*DPR,my-9*DPR,mw+12*DPR,18*DPR);
-  ctx.fillStyle="#6b5fa8";ctx.fillRect(mx0,my-1.5*DPR,mw,3*DPR);
+  ctx.fillStyle="rgba(0,0,51,.78)";ctx.fillRect(mx0-6*DPR,my-9*DPR,mw+12*DPR,18*DPR);
+  ctx.fillStyle="#0065cc";ctx.fillRect(mx0,my-1.5*DPR,mw,3*DPR);
   S.stops.forEach(function(st){var c=st.res==="ok"?"#5dff9a":st.res==="miss"?"#ff5a4a":st.res==="early"?"#7fc4ff":st.res==="late"?"#ffb020":st.n===0?"#8a80b0":"#ffd23f";ctx.fillStyle=c;ctx.fillRect(M(st.x)-3*DPR,my-4*DPR,6*DPR,8*DPR);});
-  ctx.fillStyle="#2fd6a0";ctx.font="900 "+(12*DPR)+"px system-ui,sans-serif";ctx.fillText("⚡",M(CHGX),my);
+  ctx.fillStyle="#66cc00";ctx.font="900 "+(12*DPR)+"px system-ui,sans-serif";ctx.fillText("⚡",M(CHGX),my);
   ctx.fillStyle="#fff";ctx.fillText("⚑",M(TERMX),my);
-  ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(M(S.x),my,5*DPR,0,7);ctx.fill();ctx.strokeStyle="#1b1530";ctx.lineWidth=2*DPR;ctx.stroke();
+  ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(M(S.x),my,5*DPR,0,7);ctx.fill();ctx.strokeStyle="#000033";ctx.lineWidth=2*DPR;ctx.stroke();
   /* labels over stops */
-  var fs=Math.max(10,Math.min(15,SC*4.2))*DPR;ctx.font="900 "+fs+"px ui-rounded,system-ui,sans-serif";ctx.lineWidth=3*DPR;ctx.strokeStyle="#1b1530";
+  var fs=Math.max(10,Math.min(15,SC*4.2))*DPR;ctx.font="900 "+fs+"px ui-rounded,system-ui,sans-serif";ctx.lineWidth=3*DPR;ctx.strokeStyle="#000033";
   function lab(wx,ly,txt,col){var sx=(wx-cam)*sc;if(sx<-200||sx>cv.width+200)return;var hw=ctx.measureText(txt).width/2+4*DPR;sx=Math.max(hw,Math.min(cv.width-hw,sx));ctx.strokeText(txt,sx,Y(ly));ctx.fillStyle=col;ctx.fillText(txt,sx,Y(ly));}
   S.stops.forEach(function(st){if(st.done&&st.res!=="miss")return;lab(st.x-6,78,st.name,"#fff");lab(st.x-6,78+fs/sc*1.15,st.n?st.n+(st.n>1?" waiting":" waiting")+" · due "+fmt(st.due):"nobody waiting","#ffd23f");});
-  lab(CHGX+8,50,"⚡ CHARGER","#7dffd0");
+  lab(CHGX+8,50,"⚡ PowerON charger","#9be84a");
   lab(TERMX-10,58,S.ag.stops[5]+" (terminal) · due "+fmt(DUE[5]),"#fff");
   /* pops */
   S.pops.forEach(function(p){var a=1-Math.max(0,p.t-1)/0.6;ctx.globalAlpha=a;var f2=(p.big?fs*1.25:fs);ctx.font="900 "+f2+"px ui-rounded,system-ui,sans-serif";lab(p.x,p.y-p.t*16,p.txt,p.col);ctx.globalAlpha=1;});
@@ -610,6 +624,7 @@ function showResult(ok){
        row("Riders picked up",S.riders+"/"+tot)+row("Score so far","★ "+S.score)+"</table><div class='best2'>Finish the route to set a record.</div>";
   }
   h+="<div class='row'><button class='big' id='again'>Drive again</button><button class='big plain' id='chAg'>Change agency</button></div>";
+  h+="<a class='pwr' href='https://www.poweronenergy.ca/' target='_blank' rel='noopener'><span>Powered by</span><img src='poweron-logo.webp' alt='PowerON Energy Solutions'></a>";
   c.innerHTML=h;$("res").classList.add("on");
   $("again").onclick=function(){startGame(ag);};$("chAg").onclick=quitToAgencies;
   setTimeout(function(){$("again").focus();},50);

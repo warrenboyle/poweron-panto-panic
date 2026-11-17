@@ -16,4 +16,6 @@ High scores are saved per agency in your browser. Nothing is sent anywhere.
 
 The whole game is one self-contained `index.html`. All art is drawn in code and all sound is generated in the browser. Agency names are used for fun, and this game is not affiliated with any transit agency.
 
+The PowerON logo (`poweron-logo.webp`) is from [poweronenergy.ca](https://www.poweronenergy.ca/).
+
 Made by PowerON.
