@@ -18,7 +18,10 @@ export const isProfane = n => BLOCK.has(n);
 export function check(m) {
   if (!m || m.v !== 1) return null;
   const a = String(m.a), n = cleanName(m.n);
-  const s = m.s, t = m.t, r = m.r, o = m.o, c = m.c;
+  // Older saved records (backfill) have no on-time/charge details: assume the maximum (6 and 100%),
+  // which is the same loosest bound any submission could claim, so it adds no new way to fake.
+  const legacy = m.legacy === 1 && m.o === undefined && m.c === undefined;
+  const s = m.s, t = m.t, r = m.r, o = legacy ? 6 : m.o, c = legacy ? 100 : m.c;
   if (!AGENCIES.includes(a) || !n) return null;
   const int = x => Number.isInteger(x);
   if (!int(s) || !int(r) || !int(o) || !int(c) || typeof t !== "number" || !isFinite(t)) return null;

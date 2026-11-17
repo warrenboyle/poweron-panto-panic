@@ -9,7 +9,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="ppp-build" content="20261117-9">
+<meta name="ppp-build" content="20261117-10">
 <meta property="og:title" content="PowerON Panto Panic">
 <meta property="og:description" content="Drive an electric bus. Pick up riders. Stay on time. Don't run flat.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23000033'/%3E%3Cpath d='M9 1 3 9h4l-1 6 6-8H8z' fill='%2366cc00'/%3E%3C/svg%3E">
@@ -58,6 +58,8 @@ footer a,.fine a{color:var(--go);text-decoration:none}
 .lbmsg{min-height:18px;margin-top:6px;color:var(--blue)}
 .lbmsg.err{color:#c22}
 #lb{z-index:20;position:fixed}
+#bf{z-index:15;position:fixed}
+.bflist{text-align:left;font-weight:800;margin:4px auto 6px;max-width:340px;padding-left:22px;line-height:1.6}
 #lb .card{width:min(560px,100%)}
 .tabs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:6px 0 10px}
 .tabs button{font-weight:900;font-size:13px;padding:5px 10px;border:3px solid var(--ink);border-radius:999px;background:#fff}
@@ -149,7 +151,7 @@ h2.pick{margin:6px 0 12px;font-size:clamp(24px,5vw,34px);font-weight:900;color:#
 <body>
 
 <div id="title" class="screen scroll on">
-  <img class="logo" src="poweron-logo.webp?v=20261117-9" alt="PowerON Energy Solutions, an OPG Company" width="832" height="339">
+  <img class="logo" src="poweron-logo.webp?v=20261117-10" alt="PowerON Energy Solutions, an OPG Company" width="832" height="339">
   <h1 class="title"><em>PANTO</em><span>PANIC!</span></h1>
   <canvas id="titleArt" width="240" height="120" aria-label="Pixel art electric bus charging under a pantograph"></canvas>
   <p class="tag">Drive an electric bus. Pick up riders. Stay on time. Don't run flat.</p>
@@ -198,6 +200,7 @@ h2.pick{margin:6px 0 12px;font-size:clamp(24px,5vw,34px);font-weight:900;color:#
   <div class="ov" id="res"><div class="card" id="resCard"></div></div>
 </div>
 
+<div class="ov" id="bf" role="dialog" aria-label="Post saved records"><div class="card"><h3>🏆 Global leaderboard</h3><p class="sub">Post your saved records to the global leaderboard?</p><ul class="bflist" id="bfList"></ul><p class="sub">Pick your 3 initials:</p><div class="lbform"><div class="picker" id="bfPick" tabindex="0" role="group" aria-label="Your 3-letter initials. Type letters or use the arrows."></div></div><div class="lbmsg" id="bfMsg"></div><div class="row"><button class="big" id="bfSend">Post them</button><button class="big plain" id="bfNo">No thanks</button></div></div></div>
 <div class="ov" id="lb" role="dialog" aria-label="Global leaderboard"><div class="card"><h3>🏆 Top 10</h3><div class="tabs" id="lbTabs"></div><div id="lbList"></div><p class="lbnote" id="lbNote"></p><div class="row"><button class="big plain" id="lbClose">Close</button></div></div></div>
 <script>
 (function(){
@@ -233,7 +236,7 @@ var STOPX=[290,600,910,1480,1780], CHGX=1190, TERMX=2080, BUSL=64;
 var DUE=[5,11,18,27,33,39];          /* scheduled arrival (seconds after GO), tuned by playtests */
 var VMAX=116, ACC=60, BRK=100, ROLL=26;
 var START_BAT=72, CHG_RATE=24;        /* % per second while the panto is down */
-var BUILD="20261117-9",LOGO="poweron-logo.webp?v="+BUILD; /* bump BUILD here, in the ppp-build meta, the logo src and version.json on every release */
+var BUILD="20261117-10",LOGO="poweron-logo.webp?v="+BUILD; /* bump BUILD here, in the ppp-build meta, the logo src and version.json on every release */
 var LS="ppp.v1", save={muted:false,best:{}};
 try{var s0=JSON.parse(localStorage.getItem(LS)||"null");if(s0&&typeof s0==="object"){save.muted=!!s0.muted;save.best=s0.best||{};save.lbName=s0.lbName||"";save.pending=s0.pending||[];}}catch(e){}
 function persist(){try{localStorage.setItem(LS,JSON.stringify(save));}catch(e){}}
@@ -647,11 +650,11 @@ function startGame(ag){
   $("hAg").textContent=ag.short;$("hCity").textContent=ag.city;hudCache={};
   setTimeout(resize,0);resize();loopsStart();musicStart();input.go=input.chg=false;
 }
-function quitToAgencies(){musicStop();loopsStop();S=null;buildCards();show("agency");}
+function quitToAgencies(){musicStop();loopsStop();S=null;buildCards();show("agency");setTimeout(maybeBackfill,300);}
 function showResult(ok){
   musicStop();loopsStop();
   var c=$("resCard"),ag=S.ag,rec=false,prev=save.best[ag.id];
-  if(ok&&(!prev||S.score>prev.score)){save.best[ag.id]={score:S.score,time:Math.round(S.t*10)/10,riders:S.riders};persist();rec=true;}
+  if(ok&&(!prev||S.score>prev.score)){save.best[ag.id]={score:S.score,time:Math.round(S.t*10)/10,riders:S.riders,ontime:S.ontime,charge:S.finish.c};persist();rec=true;}
   var tot=S.stops.reduce(function(a,s){return a+s.n;},0);
   function row(l,v,cls){return "<tr><td>"+l+"</td><td class='"+(cls||"")+"'>"+v+"</td></tr>";}
   var h="";
@@ -731,7 +734,7 @@ document.addEventListener("keyup",function(e){
   if(CHK[e.code]){input.chg=false;$("chgBtn").classList.remove("down");}
 });
 window.addEventListener("blur",function(){input.go=input.chg=false;});
-$("playBtn").onclick=function(){unlock();buildCards();show("agency");};
+$("playBtn").onclick=function(){unlock();buildCards();show("agency");setTimeout(maybeBackfill,300);};
 $("backTitle").onclick=function(){show("title");};
 $("muteT").onclick=function(){unlock();setMuted(!save.muted);};
 $("muteG").onclick=function(){unlock();setMuted(!save.muted);};
@@ -740,7 +743,7 @@ $("quitG").onclick=quitToAgencies;
    Scores are posted to a public ntfy.sh topic. A GitHub Action (scripts/leaderboard.mjs) checks them
    every few minutes (name filter + score sanity limits) and commits leaderboard.json, which we read here. */
 var LB_POST="https://ntfy.sh/poweron-panto-panic-scores-7f3k9q";
-var LB_SRC=["https://raw.githubusercontent.com/warrenboyle/poweron-panto-panic/main/leaderboard.json","leaderboard.json"];
+var LB_SRC=["leaderboard.json","https://raw.githubusercontent.com/warrenboyle/poweron-panto-panic/main/leaderboard.json"];
 var LB=null,lbTab=null;
 var BLOCK=["ANL","ANS","ANU","ARS","ASS","ASZ","AZS","AZZ","BCH","BIH","BJB","BJS","BRA","BUM","CAK","CHK","CNK","CNT","COC","COK","COX","CRP","CUK","CUM","CUN","DCK","DIC","DIE","DIK","DIL","DIX","DKE","DLD","DMN","DYK","FAG","FAP","FAT","FCK","FCU","FFS","FKN","FKR","FKT","FKU","FKY","FUC","FUK","FUQ","FUU","FUX","FVK","GAY","GDM","GEY","GOD","GYP","HAG","HOE","HOM","HOR","HOS","HTL","HTR","JAP","JEW","JIS","JIZ","JSS","JZZ","KAF","KIK","KIL","KKK","KMS","KOK","KUK","KUM","KYK","KYS","LEZ","LSD","MFK","MFR","MLF","MOF","MUF","NAZ","NGA","NGG","NGR","NIG","NIP","NUD","NZI","OMG","PAK","PEE","PIS","PIZ","PNS","POO","POS","PRK","PSS","PUS","RAP","RET","RPE","RTD","SEX","SHI","SHT","SLT","SLU","SMD","SOB","SPC","SPK","SPZ","STD","STF","SUC","SUK","SUQ","SUX","SXX","SXY","TIT","TTS","TWT","VAG","VAJ","WAP","WHR","WNK","WOG","WOP","WTF","XXX","YID","ZIG","ZOG"]; /* names are exactly 3 letters A-Z; these combos are blocked (also enforced by the GitHub Action) */
 function cleanName(raw){var n=String(raw||"").trim().toUpperCase();return /^[A-Z]{3}$/.test(n)?n:null;}
@@ -772,6 +775,36 @@ function openLB(a){lbTab=a||lbTab||"wpg";$("lb").classList.add("on");renderLB();
   clearInterval(lbTimer);lbTimer=setInterval(function(){if(!$("lb").classList.contains("on")){clearInterval(lbTimer);return;}if(pendingFor(lbTab).length)loadLB(function(){renderLB();});},20000);}
 $("lbOpen").onclick=function(){openLB(null);};
 $("lbClose").onclick=function(){$("lb").classList.remove("on");};
+/* Reusable 3-letter arcade picker: ▲/▼ per letter, or type letters (arrows, backspace, Enter). */
+function makePicker(pk,onEnter){
+  var L=(cleanName(save.lbName)||"AAA").split(""),cur=0,locked=false;
+  function draw(){pk.innerHTML=L.map(function(c,k){return "<div class='slot"+(k===cur?" cur":"")+"'><button data-k='"+k+"' data-d='1' aria-label='Next letter'>▲</button><b>"+c+"</b><button data-k='"+k+"' data-d='-1' aria-label='Previous letter'>▼</button></div>";}).join("");
+    [].forEach.call(pk.querySelectorAll("button"),function(bt){bt.onclick=function(e){e.preventDefault();if(locked)return;cur=+bt.getAttribute("data-k");spin(+bt.getAttribute("data-d"));};});
+    [].forEach.call(pk.querySelectorAll("b"),function(el,k){el.onclick=function(){if(!locked){cur=k;draw();}};});}
+  function spin(d){L[cur]=String.fromCharCode(65+((L[cur].charCodeAt(0)-65+d+26)%26));draw();if(AC)tone("square",880+cur*110,AC.currentTime,0.003,0.05,0.04);}
+  function onKey(e){
+    if(!document.body.contains(pk)||locked||$("lb").classList.contains("on"))return;
+    var k=e.key;
+    if(/^[a-zA-Z]$/.test(k)){L[cur]=k.toUpperCase();cur=Math.min(2,cur+1);draw();e.preventDefault();}
+    else if(k==="ArrowUp"){spin(1);e.preventDefault();}else if(k==="ArrowDown"){spin(-1);e.preventDefault();}
+    else if(k==="ArrowLeft"){cur=Math.max(0,cur-1);draw();e.preventDefault();}else if(k==="ArrowRight"){cur=Math.min(2,cur+1);draw();e.preventDefault();}
+    else if(k==="Backspace"){cur=Math.max(0,cur-1);draw();e.preventDefault();}
+    else if(k==="Enter"&&(document.activeElement===pk||document.activeElement===document.body)){onEnter();e.preventDefault();}
+  }
+  document.removeEventListener("keydown",window.__lbKey||function(){});window.__lbKey=onKey;document.addEventListener("keydown",onKey);
+  draw();setTimeout(function(){if(document.body.contains(pk))pk.focus({preventScroll:true});},120);
+  return {value:function(){return L.join("");},lock:function(){locked=true;pk.setAttribute("aria-disabled","true");}};
+}
+function nameProblem(n){if(!cleanName(n))return "Use 3 letters, A to Z.";if(isProfane(n))return "Those initials aren't allowed. Try another set.";return "";}
+/* Post one run. legacy=1 marks an older saved record that has no on-time/charge details (the Action applies its loosest bound). */
+function sendScore(run,n){
+  var key=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
+  var m={v:1,a:run.a,n:n,s:run.s,t:run.t,r:run.r,k:key};if(run.legacy)m.legacy=1;else{m.o=run.o;m.c=run.c;}
+  return fetch(LB_POST,{method:"POST",body:JSON.stringify(m)}).then(function(r){if(!r.ok)throw 0;
+    save.lbName=n;save.pending=(save.pending||[]);save.pending.push({a:run.a,n:n,s:run.s,t:run.t,ts:Date.now(),k:key});
+    var bst=save.best[run.a];if(bst&&bst.score===run.s)bst.sub=true;persist();});
+}
+function qualifies(a,score){var b=(LB&&LB.boards[a])||[];return b.length<10||score>b[b.length-1].s;}
 function lbResult(run){
   var box=$("lbbox");if(!box)return;var ag=AG.filter(function(x){return x.id===run.a;})[0];
   loadLB(function(j){
@@ -782,37 +815,45 @@ function lbResult(run){
       :"<p>Top 10 for "+esc(ag.short)+" starts at ★ "+cut.toLocaleString("en-US")+".</p>";
     h+="<button class='lblink' id='lbView'>View "+esc(ag.short)+" top 10</button>";
     box.innerHTML=h;$("lbView").onclick=function(){openLB(run.a);};
-    if(qual){
-      var init=cleanName(save.lbName)||"AAA",L=init.split(""),cur=0,sent=false,pk=$("lbPick");
-      function draw(){pk.innerHTML=L.map(function(c,k){return "<div class='slot"+(k===cur?" cur":"")+"'><button data-k='"+k+"' data-d='1' aria-label='Next letter'>▲</button><b>"+c+"</b><button data-k='"+k+"' data-d='-1' aria-label='Previous letter'>▼</button></div>";}).join("");
-        [].forEach.call(pk.querySelectorAll("button"),function(bt){bt.onclick=function(e){e.preventDefault();if(sent)return;var k=+bt.getAttribute("data-k");cur=k;spin(+bt.getAttribute("data-d"));};});
-        [].forEach.call(pk.querySelectorAll("b"),function(el,k){el.onclick=function(){cur=k;draw();};});
-        $("lbMsg").textContent="";$("lbMsg").className="lbmsg";}
-      function spin(d){L[cur]=String.fromCharCode(65+((L[cur].charCodeAt(0)-65+d+26)%26));draw();if(AC)tone("square",880+cur*110,AC.currentTime,0.003,0.05,0.04);}
-      draw();
-      function onKey(e){
-        if(!$("lbPick")||sent||$("lb").classList.contains("on")){return;}
-        var k=e.key;
-        if(/^[a-zA-Z]$/.test(k)){L[cur]=k.toUpperCase();cur=Math.min(2,cur+1);draw();e.preventDefault();}
-        else if(k==="ArrowUp"){spin(1);e.preventDefault();}else if(k==="ArrowDown"){spin(-1);e.preventDefault();}
-        else if(k==="ArrowLeft"){cur=Math.max(0,cur-1);draw();e.preventDefault();}else if(k==="ArrowRight"){cur=Math.min(2,cur+1);draw();e.preventDefault();}
-        else if(k==="Backspace"){cur=Math.max(0,cur-1);draw();e.preventDefault();}
-        else if(k==="Enter"&&(document.activeElement===pk||document.activeElement===document.body)){$("lbSend").click();e.preventDefault();}
-      }
-      document.removeEventListener("keydown",window.__lbKey||function(){});window.__lbKey=onKey;document.addEventListener("keydown",onKey);
-      setTimeout(function(){if($("lbPick"))pk.focus({preventScroll:true});},120);
-      $("lbSend").onclick=function(){
-        var n=cleanName(L.join("")),msg=$("lbMsg");msg.className="lbmsg";
-        if(!n){msg.textContent="Use 3 letters, A to Z.";msg.className="lbmsg err";return;}
-        if(isProfane(n)){msg.textContent="Those initials aren't allowed. Try another set.";msg.className="lbmsg err";return;}
-        $("lbSend").disabled=true;msg.textContent="Sending…";
-        var key=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
-        var body=JSON.stringify({v:1,a:run.a,n:n,s:run.s,t:run.t,r:run.r,o:run.o,c:run.c,k:key});
-        fetch(LB_POST,{method:"POST",body:body}).then(function(r){if(!r.ok)throw 0;sent=true;
-          save.lbName=n;save.pending=(save.pending||[]);save.pending.push({a:run.a,n:n,s:run.s,t:run.t,ts:Date.now(),k:key});persist();
-          msg.textContent="Sent! "+n+" is pending. It usually shows on the board within 1 to 3 minutes.";pk.setAttribute("aria-disabled","true");
-        }).catch(function(){msg.textContent="Couldn't send right now. Try again.";msg.className="lbmsg err";$("lbSend").disabled=false;});
-      };}
+    if(!qual)return;
+    var pkr=makePicker($("lbPick"),function(){$("lbSend").click();});
+    $("lbSend").onclick=function(){
+      var n=pkr.value(),msg=$("lbMsg"),bad=nameProblem(n);msg.className="lbmsg";
+      if(bad){msg.textContent=bad;msg.className="lbmsg err";return;}
+      $("lbSend").disabled=true;msg.textContent="Sending…";
+      sendScore(run,n).then(function(){pkr.lock();msg.textContent="Sent! "+n+" is pending. It usually shows on the board within 1 to 3 minutes.";})
+        .catch(function(){msg.textContent="Couldn't send right now. Try again.";msg.className="lbmsg err";$("lbSend").disabled=false;});
+    };
+  });
+}
+/* One-time backfill: offer to post saved per-agency bests that were never submitted and would make the top 10. */
+function backfillCandidates(){return AG.map(function(ag){var b=save.best[ag.id];if(!b||b.sub||b.asked||!(b.score>0))return null;
+  if(!(typeof b.time==="number"&&b.time>=25&&typeof b.riders==="number"))return null;   /* not enough detail to check: skip */
+  if(!qualifies(ag.id,b.score))return null;
+  if((save.pending||[]).some(function(p){return p.a===ag.id&&p.s===b.score;}))return null;          /* already sent from the results screen */
+  if(((LB&&LB.boards[ag.id])||[]).some(function(e){return e.s===b.score&&e.t===b.time;}))return null; /* already on the board */
+  var full=typeof b.ontime==="number"&&typeof b.charge==="number";
+  return {ag:ag,run:{a:ag.id,s:b.score,t:b.time,r:b.riders,o:b.ontime,c:b.charge,legacy:!full}};}).filter(Boolean);}
+function maybeBackfill(){
+  if(!$("agency").classList.contains("on")||$("bf").classList.contains("on"))return;
+  loadLB(function(j){
+    if(!j||!$("agency").classList.contains("on"))return;
+    var list=backfillCandidates();if(!list.length)return;
+    $("bfList").innerHTML=list.map(function(x){return "<li><b>"+esc(x.ag.name)+"</b> ★ "+x.run.s.toLocaleString("en-US")+" ("+x.run.t.toFixed(1)+"s)</li>";}).join("");
+    $("bfMsg").textContent="";$("bfMsg").className="lbmsg";$("bfSend").disabled=false;$("bfSend").style.display="";$("bfNo").textContent="No thanks";
+    $("bf").classList.add("on");
+    var pkr=makePicker($("bfPick"),function(){$("bfSend").click();});
+    function markAsked(){list.forEach(function(x){var b=save.best[x.run.a];if(b)b.asked=true;});persist();}
+    $("bfNo").onclick=function(){markAsked();$("bf").classList.remove("on");buildCards();};
+    $("bfSend").onclick=function(){
+      var n=pkr.value(),msg=$("bfMsg"),bad=nameProblem(n);msg.className="lbmsg";
+      if(bad){msg.textContent=bad;msg.className="lbmsg err";return;}
+      $("bfSend").disabled=true;msg.textContent="Sending…";var i=0,okN=0;
+      (function next(){if(i>=list.length){markAsked();pkr.lock();$("bfSend").style.display="none";$("bfNo").textContent="Done";
+          msg.textContent=okN?"Sent "+okN+" record"+(okN>1?"s":"")+" as "+n+". They usually show on the board within 1 to 3 minutes.":"Couldn't send right now. Try again later.";
+          if(!okN){msg.className="lbmsg err";list.forEach(function(x){var b=save.best[x.run.a];if(b)b.asked=false;});persist();}return;}
+        var x=list[i++];sendScore(x.run,n).then(function(){okN++;}).catch(function(){}).then(function(){setTimeout(next,400);});})();
+    };
   });
 }
 renderMute();buildCards();
