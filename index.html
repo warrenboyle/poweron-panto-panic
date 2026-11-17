@@ -30,6 +30,14 @@ footer a,.fine a{color:var(--go);text-decoration:none}
 .pwr{display:inline-flex;align-items:center;gap:10px;margin-top:14px;background:var(--ink);border-radius:12px;padding:7px 14px;text-decoration:none;color:#cfe0ff;font-weight:800;font-size:13px}
 .pwr img{height:30px;width:auto}
 .pwr:hover{outline:3px solid var(--go)}
+.juice{font-weight:900;font-size:17px;color:var(--ink);margin:16px 6px 0}
+.pwr2{margin-top:8px}.pwr2 img{height:38px}
+.share{font-weight:900;font-size:18px;padding:9px 18px;border:4px solid var(--ink);border-radius:16px;background:var(--blue);color:#fff;box-shadow:0 6px 0 var(--ink);min-height:50px;margin-top:12px}
+.share:active{transform:translateY(3px);box-shadow:0 3px 0 var(--ink)}
+.share.hot{background:var(--go);color:var(--ink);font-size:21px;animation:glow .7s infinite alternate}
+@keyframes glow{from{box-shadow:0 6px 0 var(--ink),0 0 0 0 rgba(102,204,0,.7)}to{box-shadow:0 6px 0 var(--ink),0 0 0 9px rgba(102,204,0,0)}}
+.copied{display:block;height:20px;font-weight:900;font-size:14px;color:var(--blue);margin-top:4px;opacity:0;transition:opacity .2s}
+.copied.on{opacity:1}
 .title em{font-style:normal;display:block;font-size:.6em;letter-spacing:3px;color:#fff}
 #titleArt{width:min(560px,92vw);aspect-ratio:2/1;image-rendering:pixelated;image-rendering:crisp-edges;border:5px solid var(--ink);border-radius:18px;box-shadow:0 8px 0 var(--ink);margin-top:18px;background:#7fd0ff}
 .tag{font-weight:900;color:#fff;font-size:clamp(16px,3.6vw,20px);text-align:center;margin:18px 6px 4px;text-shadow:0 2px 0 var(--ink),2px 0 0 var(--ink),-2px 0 0 var(--ink),0 -2px 0 var(--ink)}
@@ -120,7 +128,7 @@ h2.pick{margin:6px 0 12px;font-size:clamp(24px,5vw,34px);font-weight:900;color:#
   </div>
   <div class="row"><button class="snd" id="muteT">🔊 Sound on</button></div>
   <p class="brandline">From <b>PowerON</b>, Canada's end-to-end fleet electrification partner.</p>
-  <footer>Made by <a href="https://www.poweronenergy.ca/" target="_blank" rel="noopener">PowerON</a></footer>
+  <footer>Made by the intern</footer>
 </div>
 
 <div id="agency" class="screen scroll">
@@ -137,7 +145,7 @@ h2.pick{margin:6px 0 12px;font-size:clamp(24px,5vw,34px);font-weight:900;color:#
   </div>
   <div class="row"><button class="big plain" id="backTitle">Back</button></div>
   <p class="fine">Agency names are used for fun. This game is not affiliated with any transit agency.</p>
-  <footer>Made by <a href="https://www.poweronenergy.ca/" target="_blank" rel="noopener">PowerON</a></footer>
+  <footer>Made by the intern</footer>
 </div>
 
 <div id="game" class="screen">
@@ -623,11 +631,50 @@ function showResult(ok){
     h+="<h3 style='color:#c22'>Out of charge!</h3><p class='sub'>The bus ran flat after "+fmt(S.t)+". Stop at the charger next time.</p><table>"+
        row("Riders picked up",S.riders+"/"+tot)+row("Score so far","★ "+S.score)+"</table><div class='best2'>Finish the route to set a record.</div>";
   }
+  if(ok)h+="<button class='share"+(rec?" hot":"")+"' id='shareBtn'>"+(rec?"🏆 Share your new record":"📣 Share score")+"</button><span class='copied' id='copied' role='status'></span>";
   h+="<div class='row'><button class='big' id='again'>Drive again</button><button class='big plain' id='chAg'>Change agency</button></div>";
-  h+="<a class='pwr' href='https://www.poweronenergy.ca/' target='_blank' rel='noopener'><span>Powered by</span><img src='poweron-logo.webp' alt='PowerON Energy Solutions'></a>";
+  if(ok)h+="<a class='pwr' href='https://www.poweronenergy.ca/' target='_blank' rel='noopener'><span>Powered by</span><img src='poweron-logo.webp' alt='PowerON Energy Solutions'></a>";
+  else h+="<p class='juice'>Out of juice! Next time, charge up with PowerON.</p><a class='pwr pwr2' href='https://www.poweronenergy.ca/' target='_blank' rel='noopener'><img src='poweron-logo.webp' alt='PowerON Energy Solutions'></a>";
   c.innerHTML=h;$("res").classList.add("on");
   $("again").onclick=function(){startGame(ag);};$("chAg").onclick=quitToAgencies;
+  if(ok){var info={score:S.score,ag:ag,t:S.t,riders:S.riders,tot:tot,ontime:S.ontime,rec:rec};shareFile=null;makeCard(info);$("shareBtn").onclick=function(){shareScore(info);};}
   setTimeout(function(){$("again").focus();},50);
+}
+/* ================= SHARE ================= */
+var GAME_URL="https://warrenboyle.github.io/poweron-panto-panic/",shareFile=null,logoImg=new Image();logoImg.src="poweron-logo.webp";
+function shareText(i){return "I scored "+i.score.toLocaleString("en-US")+" driving "+i.ag.short+" in PowerON Panto Panic! Can you beat it? 🚌⚡";}
+function makeCard(i){ /* 1200x630 pixel-style score card for the share sheet */
+  try{
+    var W=200,H=105,lc=document.createElement("canvas");lc.width=W;lc.height=H;
+    var st={ag:i.ag,stops:[],x:CHGX+14,v:0,panto:1,charging:true,dwell:null,throttle:false,rot:0,shake:0,flakes:[],bat:100};
+    var sv=S;S={x:st.x,v:0};drawWorld(lc.getContext("2d"),i.ag,CHGX+14-140,W,H,0,st);S=sv;
+    var c=document.createElement("canvas");c.width=1200;c.height=630;var g=c.getContext("2d");g.imageSmoothingEnabled=false;
+    g.drawImage(lc,0,0,W,H,0,0,1200,630);
+    g.fillStyle="rgba(0,0,51,.86)";g.fillRect(40,40,620,550);g.strokeStyle="#66cc00";g.lineWidth=8;g.strokeRect(40,40,620,550);
+    if(logoImg.complete&&logoImg.naturalWidth)g.drawImage(logoImg,80,70,260,106);
+    var F='"Poppins",ui-rounded,system-ui,sans-serif';g.textAlign="left";g.textBaseline="alphabetic";
+    g.fillStyle="#fff";g.font="900 52px "+F;g.fillText("PANTO PANIC!",80,250);
+    g.fillStyle="#9fc3ff";g.font="800 30px "+F;g.fillText(i.ag.name+" · "+i.t.toFixed(1)+"s",80,305);
+    g.fillStyle="#66cc00";g.font="900 104px "+F;g.fillText("★ "+i.score.toLocaleString("en-US"),76,420);
+    g.fillStyle="#fff";g.font="800 28px "+F;g.fillText(i.riders+"/"+i.tot+" riders · "+i.ontime+"/6 on time",80,470);
+    if(i.rec){g.fillStyle="#66cc00";g.fillRect(80,495,300,46);g.fillStyle="#000033";g.font="900 26px "+F;g.fillText("NEW RECORD!",100,528);}
+    g.fillStyle="#cfe0ff";g.font="800 22px "+F;g.fillText("warrenboyle.github.io/poweron-panto-panic",80,574);
+    c.toBlob(function(b){if(b&&window.File){try{shareFile=new File([b],"panto-panic-score.png",{type:"image/png"});}catch(e){}}},"image/png");
+    window.PPP.lastCard=c;
+  }catch(e){}
+}
+function flashCopied(msg){var el=$("copied");if(!el)return;el.textContent=msg;el.classList.add("on");clearTimeout(flashCopied.t);flashCopied.t=setTimeout(function(){el.classList.remove("on");},2200);}
+function copyText(t){
+  function legacy(){var ta=document.createElement("textarea");ta.value=t;ta.setAttribute("readonly","");ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();var ok=false;try{ok=document.execCommand("copy");}catch(e){}document.body.removeChild(ta);flashCopied(ok?"Copied! Paste it anywhere.":"Copy this: "+t);}
+  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(t).then(function(){flashCopied("Copied! Paste it anywhere.");},legacy);}else legacy();
+}
+function shareScore(i){
+  var text=shareText(i),full=text+" "+GAME_URL;
+  if(navigator.share){
+    var data={title:"PowerON Panto Panic",text:text,url:GAME_URL};
+    if(shareFile&&navigator.canShare){try{var d2={title:data.title,text:full,files:[shareFile]};if(navigator.canShare(d2))data=d2;}catch(e){}}
+    navigator.share(data).catch(function(e){if(!e||e.name!=="AbortError")copyText(full);});
+  }else copyText(full);
 }
 /* ================= INPUT ================= */
 function bindHold(el,key){
