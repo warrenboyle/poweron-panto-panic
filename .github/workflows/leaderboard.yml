@@ -1,28 +1,45 @@
 name: Update leaderboard
+# GitHub's cron is best-effort (often late or skipped, especially on new repos), so one run
+# polls ntfy.sh every minute for ~5.5 hours, then queues the next run itself (workflow_dispatch
+# is allowed with GITHUB_TOKEN). The schedule below is only a backup that restarts the chain
+# if it ever breaks; the concurrency group keeps it to one poller at a time.
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "7,37 * * * *"
   workflow_dispatch:
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: leaderboard
   cancel-in-progress: false
 jobs:
-  update:
+  poll:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: node scripts/leaderboard.mjs
-      - name: Commit if changed
+      - name: Poll for new scores every minute
+        env:
+          LOOP_SECONDS: "19800"   # 5.5 hours
         run: |
-          if git diff --quiet leaderboard.json; then echo "No change"; exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add leaderboard.json
-          git commit -m "Update leaderboard"
-          git push
+          end=$((SECONDS + LOOP_SECONDS))
+          while [ $SECONDS -lt $end ]; do
+            git pull --rebase -q origin main || git rebase --abort || true
+            if node scripts/leaderboard.mjs && ! git diff --quiet leaderboard.json; then
+              git add leaderboard.json
+              git commit -q -m "Update leaderboard"
+              git push -q origin HEAD:main || { git pull --rebase -q origin main && git push -q origin HEAD:main; } || echo "push failed, retrying next loop"
+            fi
+            sleep 60
+          done
+      - name: Queue the next poller
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run leaderboard.yml --repo "$GITHUB_REPOSITORY" --ref main

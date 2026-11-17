@@ -9,7 +9,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="ppp-build" content="20261117-8">
+<meta name="ppp-build" content="20261117-9">
 <meta property="og:title" content="PowerON Panto Panic">
 <meta property="og:description" content="Drive an electric bus. Pick up riders. Stay on time. Don't run flat.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23000033'/%3E%3Cpath d='M9 1 3 9h4l-1 6 6-8H8z' fill='%2366cc00'/%3E%3C/svg%3E">
@@ -149,7 +149,7 @@ h2.pick{margin:6px 0 12px;font-size:clamp(24px,5vw,34px);font-weight:900;color:#
 <body>
 
 <div id="title" class="screen scroll on">
-  <img class="logo" src="poweron-logo.webp?v=20261117-8" alt="PowerON Energy Solutions, an OPG Company" width="832" height="339">
+  <img class="logo" src="poweron-logo.webp?v=20261117-9" alt="PowerON Energy Solutions, an OPG Company" width="832" height="339">
   <h1 class="title"><em>PANTO</em><span>PANIC!</span></h1>
   <canvas id="titleArt" width="240" height="120" aria-label="Pixel art electric bus charging under a pantograph"></canvas>
   <p class="tag">Drive an electric bus. Pick up riders. Stay on time. Don't run flat.</p>
@@ -233,7 +233,7 @@ var STOPX=[290,600,910,1480,1780], CHGX=1190, TERMX=2080, BUSL=64;
 var DUE=[5,11,18,27,33,39];          /* scheduled arrival (seconds after GO), tuned by playtests */
 var VMAX=116, ACC=60, BRK=100, ROLL=26;
 var START_BAT=72, CHG_RATE=24;        /* % per second while the panto is down */
-var BUILD="20261117-8",LOGO="poweron-logo.webp?v="+BUILD; /* bump BUILD here, in the ppp-build meta, the logo src and version.json on every release */
+var BUILD="20261117-9",LOGO="poweron-logo.webp?v="+BUILD; /* bump BUILD here, in the ppp-build meta, the logo src and version.json on every release */
 var LS="ppp.v1", save={muted:false,best:{}};
 try{var s0=JSON.parse(localStorage.getItem(LS)||"null");if(s0&&typeof s0==="object"){save.muted=!!s0.muted;save.best=s0.best||{};save.lbName=s0.lbName||"";save.pending=s0.pending||[];}}catch(e){}
 function persist(){try{localStorage.setItem(LS,JSON.stringify(save));}catch(e){}}
@@ -747,8 +747,13 @@ function cleanName(raw){var n=String(raw||"").trim().toUpperCase();return /^[A-Z
 function isProfane(n){return BLOCK.indexOf(n)>=0;}
 function loadLB(cb){var i=0;(function next(){if(i>=LB_SRC.length){cb(null);return;}var u=LB_SRC[i++]+"?t="+Date.now();
   fetch(u,{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(j){if(!j||!j.boards)throw 0;LB=j;cb(j);}).catch(next);})();}
-function pendingFor(a){var now=Date.now();save.pending=(save.pending||[]).filter(function(p){return now-p.ts<3600e3;});
-  var b=(LB&&LB.boards[a])||[];return save.pending.filter(function(p){return p.a===a&&!b.some(function(e){return e.n===p.n&&e.s>=p.s;});});}
+/* A sent score stays "(pending)" until the Action reports on it (by its random key) in leaderboard.json "recent". */
+function lbStatus(p){var rec=(LB&&LB.recent)||[];for(var i=rec.length-1;i>=0;i--)if(rec[i].k===p.k)return rec[i].r;
+  var b=(LB&&LB.boards[p.a])||[];if(b.some(function(e){return e.n===p.n&&e.s===p.s;}))return "added";return null;}
+function pendingFor(a){var now=Date.now();save.pending=(save.pending||[]).filter(function(p){return now-p.ts<6*3600e3;});
+  return save.pending.filter(function(p){return p.a===a&&!lbStatus(p);});}
+function myResults(a){return (save.pending||[]).filter(function(p){return p.a===a;}).map(function(p){var st=lbStatus(p),age=(Date.now()-p.ts)/60000;
+  return esc(p.n)+" ★ "+p.s.toLocaleString("en-US")+": "+(st==="added"?"on the board ✓":st==="low"?"checked, not in the top 10":st==="rejected"?"not accepted":age>15?"still waiting to be checked":"pending (usually 1 to 3 minutes)");});}
 function boardRows(a,hl){var b=((LB&&LB.boards[a])||[]).filter(function(e){return cleanName(e.n)===e.n&&!isProfane(e.n);}).map(function(e){return {n:e.n,s:e.s,t:e.t};});
   pendingFor(a).forEach(function(p){b.push({n:p.n,s:p.s,t:p.t,pend:true});});
   b.sort(function(x,y){return y.s-x.s||x.t-y.t;});return b.slice(0,10);}
@@ -759,9 +764,12 @@ function renderLB(){
   var rows=boardRows(lbTab),me=save.lbName;
   $("lbList").innerHTML=!LB&&!rows.length?"<p class='sub'>Couldn't load the leaderboard. Try again in a minute.</p>":rows.length?"<table class='lbt'>"+rows.map(function(e,i){return "<tr class='"+(e.pend?"pend":"")+(me&&e.n===me?" me":"")+"'><td>"+(i+1)+"</td><td class='nm'>"+esc(e.n)+(e.pend?" (pending)":"")+"</td><td>"+e.t.toFixed(1)+"s</td><td>★ "+e.s.toLocaleString("en-US")+"</td></tr>";}).join("")+"</table>":"<p class='sub'>No scores yet. Be the first!</p>";
   var up=LB&&LB.updated?Math.max(0,Math.round((Date.now()-Date.parse(LB.updated))/60000)):null;
-  $("lbNote").textContent="New scores are checked and added every few minutes."+(up!=null?" Last update: "+(up<1?"just now":up<120?up+" min ago":Math.round(up/60)+" h ago")+".":"");
+  var mine=myResults(lbTab);
+  $("lbNote").innerHTML=(mine.length?"<b>Your scores:</b> "+mine.join(" · ")+"<br>":"")+"New scores usually appear within 1 to 3 minutes."+(up!=null?" Last change: "+(up<1?"just now":up<120?up+" min ago":Math.round(up/60)+" h ago")+".":"");
 }
-function openLB(a){lbTab=a||lbTab||"wpg";$("lb").classList.add("on");renderLB();loadLB(function(){renderLB();});}
+var lbTimer=null;
+function openLB(a){lbTab=a||lbTab||"wpg";$("lb").classList.add("on");renderLB();loadLB(function(){renderLB();});
+  clearInterval(lbTimer);lbTimer=setInterval(function(){if(!$("lb").classList.contains("on")){clearInterval(lbTimer);return;}if(pendingFor(lbTab).length)loadLB(function(){renderLB();});},20000);}
 $("lbOpen").onclick=function(){openLB(null);};
 $("lbClose").onclick=function(){$("lb").classList.remove("on");};
 function lbResult(run){
@@ -798,10 +806,11 @@ function lbResult(run){
         if(!n){msg.textContent="Use 3 letters, A to Z.";msg.className="lbmsg err";return;}
         if(isProfane(n)){msg.textContent="Those initials aren't allowed. Try another set.";msg.className="lbmsg err";return;}
         $("lbSend").disabled=true;msg.textContent="Sending…";
-        var body=JSON.stringify({v:1,a:run.a,n:n,s:run.s,t:run.t,r:run.r,o:run.o,c:run.c});
+        var key=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
+        var body=JSON.stringify({v:1,a:run.a,n:n,s:run.s,t:run.t,r:run.r,o:run.o,c:run.c,k:key});
         fetch(LB_POST,{method:"POST",body:body}).then(function(r){if(!r.ok)throw 0;sent=true;
-          save.lbName=n;save.pending=(save.pending||[]);save.pending.push({a:run.a,n:n,s:run.s,t:run.t,ts:Date.now()});persist();
-          msg.textContent="Sent! "+n+" will show on the board within about 15 minutes.";pk.setAttribute("aria-disabled","true");
+          save.lbName=n;save.pending=(save.pending||[]);save.pending.push({a:run.a,n:n,s:run.s,t:run.t,ts:Date.now(),k:key});persist();
+          msg.textContent="Sent! "+n+" is pending. It usually shows on the board within 1 to 3 minutes.";pk.setAttribute("aria-disabled","true");
         }).catch(function(){msg.textContent="Couldn't send right now. Try again.";msg.className="lbmsg err";$("lbSend").disabled=false;});
       };}
   });

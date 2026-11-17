@@ -43,23 +43,27 @@ async function main() {
   if (!res.ok) throw new Error("ntfy " + res.status);
   const lines = (await res.text()).split("\n").filter(Boolean);
   let added = 0, rejected = 0, last = null;
+  const recent = lb.recent || [];
   for (const line of lines) {
     let ev; try { ev = JSON.parse(line); } catch { continue; }
     if (ev.event !== "message") continue;
     last = ev.id;
     let m; try { m = JSON.parse(ev.message); } catch { rejected++; continue; }
+    const key = m && typeof m.k === "string" && /^[a-z0-9]{6,16}$/.test(m.k) ? m.k : null;
+    const note = r => { if (key) { recent.push({ k: key, r }); } };   // lets the game show an honest status
     const ok = check(m);
-    if (!ok) { rejected++; continue; }
+    if (!ok) { rejected++; note("rejected"); continue; }
     const board = lb.boards[m.a];
     const entry = { n: ok.n, s: ok.s, t: ok.t, d: new Date(ev.time * 1000).toISOString().slice(0, 10) };
     const i = board.findIndex(e => e.n === entry.n);              // one spot per name per agency
-    if (i >= 0) { if (board[i].s >= entry.s) continue; board.splice(i, 1); }
+    if (i >= 0) { if (board[i].s >= entry.s) { note("low"); continue; } board.splice(i, 1); }
     board.push(entry);
     board.sort((x, y) => y.s - x.s || x.t - y.t);
     board.length = Math.min(board.length, TOP);
-    if (board.includes(entry)) added++;
+    if (board.includes(entry)) { added++; note("added"); } else note("low");
   }
   if (last) lb.cursor = last;
+  lb.recent = recent.slice(-100);
   if (last || cleaned) lb.updated = new Date().toISOString();
   writeFileSync(FILE, JSON.stringify(lb, null, 1) + "\n");
   console.log(`messages=${lines.length} added=${added} rejected=${rejected} cleaned=${cleaned} cursor=${lb.cursor}`);
