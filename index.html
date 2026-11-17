@@ -41,7 +41,14 @@ footer a,.fine a{color:var(--go);text-decoration:none}
 .lbbox{margin-top:10px;background:#eef4ff;border:3px solid var(--ink);border-radius:14px;padding:10px 12px;font-weight:800;font-size:14px}
 .lbbox p{margin:0 0 6px}
 .lbform{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-.lbform input{font:inherit;font-weight:900;font-size:20px;letter-spacing:2px;text-transform:uppercase;width:150px;padding:6px 10px;border:3px solid var(--ink);border-radius:10px;text-align:center}
+.picker{display:flex;gap:8px;justify-content:center;outline:none;border-radius:12px;padding:4px}
+.picker:focus-visible{outline:3px solid var(--blue)}
+.slot{display:flex;flex-direction:column;align-items:center;gap:4px}
+.slot button{width:52px;height:34px;border:3px solid var(--ink);border-radius:10px;background:#fff;font-size:16px;font-weight:900;padding:0;color:var(--ink)}
+.slot button:active{background:var(--go)}
+.slot b{display:grid;place-items:center;width:52px;height:56px;border:3px solid var(--ink);border-radius:10px;background:var(--ink);color:var(--go);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:34px}
+.slot.cur b{background:var(--go);color:var(--ink)}
+.lbform{align-items:center}
 .lbform button,.lblink{font-weight:900;font-size:16px;padding:8px 14px;border:3px solid var(--ink);border-radius:10px;background:var(--go);color:var(--ink);box-shadow:0 4px 0 var(--ink)}
 .lblink{background:#fff;margin-top:6px}
 .lbmsg{min-height:18px;margin-top:6px;color:var(--blue)}
@@ -730,16 +737,14 @@ $("quitG").onclick=quitToAgencies;
 var LB_POST="https://ntfy.sh/poweron-panto-panic-scores-7f3k9q";
 var LB_SRC=["https://raw.githubusercontent.com/warrenboyle/poweron-panto-panic/main/leaderboard.json","leaderboard.json"];
 var LB=null,lbTab=null;
-var BAD_SUB=["FUCK","FUK","FCK","SHIT","SHT","CUNT","BITCH","BICH","COCK","PUSSY","FAG","NIGG","NIGA","NIGR","KIKE","CHINK","SLUT","WHORE","HOR3","RAPE","NAZI","HITLER","TWAT","WANK","DICK","PENIS","VAGINA","ANUS","BOOB","TITS","JIZZ","PORN","KKK","RETARD","DYKE","TRANNY","BASTARD","PISS","CUM","SEX","ANAL","HEIL","KYS"];
-var BAD_EXACT=["ASS","ARSE","FU","STFU","WTF","GAY","SPIC","HO","HOE","TIT","POO","DIE","KILL","666","69","420"];
-function cleanName(raw){var n=String(raw||"").toUpperCase().replace(/[^A-Z0-9 ]/g,"").replace(/\s+/g," ").trim().slice(0,8);return n.length?n:null;}
-function isProfane(n){var f=n.replace(/ /g,""),l=f.replace(/0/g,"O").replace(/1/g,"I").replace(/3/g,"E").replace(/4/g,"A").replace(/5/g,"S").replace(/7/g,"T").replace(/8/g,"B").replace(/9/g,"G");
-  return [f,l,l.replace(/I/g,"L"),l.replace(/(.)\1+/g,"$1")].some(function(x){return BAD_EXACT.indexOf(x)>=0||BAD_SUB.some(function(b){return x.indexOf(b)>=0;});});}
+var BLOCK=["ANL","ANS","ANU","ARS","ASS","ASZ","AZS","AZZ","BCH","BIH","BJB","BJS","BRA","BUM","CAK","CHK","CNK","CNT","COC","COK","COX","CRP","CUK","CUM","CUN","DCK","DIC","DIE","DIK","DIL","DIX","DKE","DLD","DMN","DYK","FAG","FAP","FAT","FCK","FCU","FFS","FKN","FKR","FKT","FKU","FKY","FUC","FUK","FUQ","FUU","FUX","FVK","GAY","GDM","GEY","GOD","GYP","HAG","HOE","HOM","HOR","HOS","HTL","HTR","JAP","JEW","JIS","JIZ","JSS","JZZ","KAF","KIK","KIL","KKK","KMS","KOK","KUK","KUM","KYK","KYS","LEZ","LSD","MFK","MFR","MLF","MOF","MUF","NAZ","NGA","NGG","NGR","NIG","NIP","NUD","NZI","OMG","PAK","PEE","PIS","PIZ","PNS","POO","POS","PRK","PSS","PUS","RAP","RET","RPE","RTD","SEX","SHI","SHT","SLT","SLU","SMD","SOB","SPC","SPK","SPZ","STD","STF","SUC","SUK","SUQ","SUX","SXX","SXY","TIT","TTS","TWT","VAG","VAJ","WAP","WHR","WNK","WOG","WOP","WTF","XXX","YID","ZIG","ZOG"]; /* names are exactly 3 letters A-Z; these combos are blocked (also enforced by the GitHub Action) */
+function cleanName(raw){var n=String(raw||"").trim().toUpperCase();return /^[A-Z]{3}$/.test(n)?n:null;}
+function isProfane(n){return BLOCK.indexOf(n)>=0;}
 function loadLB(cb){var i=0;(function next(){if(i>=LB_SRC.length){cb(null);return;}var u=LB_SRC[i++]+"?t="+Date.now();
   fetch(u,{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(j){if(!j||!j.boards)throw 0;LB=j;cb(j);}).catch(next);})();}
 function pendingFor(a){var now=Date.now();save.pending=(save.pending||[]).filter(function(p){return now-p.ts<3600e3;});
   var b=(LB&&LB.boards[a])||[];return save.pending.filter(function(p){return p.a===a&&!b.some(function(e){return e.n===p.n&&e.s>=p.s;});});}
-function boardRows(a,hl){var b=((LB&&LB.boards[a])||[]).map(function(e){return {n:e.n,s:e.s,t:e.t};});
+function boardRows(a,hl){var b=((LB&&LB.boards[a])||[]).filter(function(e){return cleanName(e.n)===e.n&&!isProfane(e.n);}).map(function(e){return {n:e.n,s:e.s,t:e.t};});
   pendingFor(a).forEach(function(p){b.push({n:p.n,s:p.s,t:p.t,pend:true});});
   b.sort(function(x,y){return y.s-x.s||x.t-y.t;});return b.slice(0,10);}
 function esc(x){return String(x).replace(/[&<>"']/g,function(c){return "&#"+c.charCodeAt(0)+";";});}
@@ -759,21 +764,39 @@ function lbResult(run){
   loadLB(function(j){
     if(!$("lbbox"))return;
     var b=j?j.boards[run.a]||[]:[],cut=b.length<10?0:b[b.length-1].s,qual=!j||run.s>cut;
-    var h=qual?"<p>🏆 "+(j?"That's a top-10 score for "+esc(ag.short)+"!":"Add your score to the "+esc(ag.short)+" leaderboard:")+" Enter your initials:</p>"+
-      "<div class='lbform'><input id='lbName' maxlength='8' autocomplete='nickname' autocapitalize='characters' spellcheck='false' placeholder='ABC' aria-label='Your initials or short name' value='"+esc(save.lbName||"")+"'><button id='lbSend'>Submit</button></div><div class='lbmsg' id='lbMsg'></div>"
+    var h=qual?"<p>🏆 "+(j?"That's a top-10 score for "+esc(ag.short)+"!":"Add your score to the "+esc(ag.short)+" leaderboard:")+" Pick your 3 initials:</p>"+
+      "<div class='lbform'><div class='picker' id='lbPick' tabindex='0' role='group' aria-label='Your 3-letter initials. Type letters or use the arrows.'></div><button id='lbSend'>Submit</button></div><div class='lbmsg' id='lbMsg'></div>"
       :"<p>Top 10 for "+esc(ag.short)+" starts at ★ "+cut.toLocaleString("en-US")+".</p>";
     h+="<button class='lblink' id='lbView'>View "+esc(ag.short)+" top 10</button>";
     box.innerHTML=h;$("lbView").onclick=function(){openLB(run.a);};
-    if(qual){var inp=$("lbName");inp.addEventListener("keydown",function(e){e.stopPropagation();if(e.key==="Enter")$("lbSend").click();});
+    if(qual){
+      var init=cleanName(save.lbName)||"AAA",L=init.split(""),cur=0,sent=false,pk=$("lbPick");
+      function draw(){pk.innerHTML=L.map(function(c,k){return "<div class='slot"+(k===cur?" cur":"")+"'><button data-k='"+k+"' data-d='1' aria-label='Next letter'>▲</button><b>"+c+"</b><button data-k='"+k+"' data-d='-1' aria-label='Previous letter'>▼</button></div>";}).join("");
+        [].forEach.call(pk.querySelectorAll("button"),function(bt){bt.onclick=function(e){e.preventDefault();if(sent)return;var k=+bt.getAttribute("data-k");cur=k;spin(+bt.getAttribute("data-d"));};});
+        [].forEach.call(pk.querySelectorAll("b"),function(el,k){el.onclick=function(){cur=k;draw();};});
+        $("lbMsg").textContent="";$("lbMsg").className="lbmsg";}
+      function spin(d){L[cur]=String.fromCharCode(65+((L[cur].charCodeAt(0)-65+d+26)%26));draw();if(AC)tone("square",880+cur*110,AC.currentTime,0.003,0.05,0.04);}
+      draw();
+      function onKey(e){
+        if(!$("lbPick")||sent||$("lb").classList.contains("on")){return;}
+        var k=e.key;
+        if(/^[a-zA-Z]$/.test(k)){L[cur]=k.toUpperCase();cur=Math.min(2,cur+1);draw();e.preventDefault();}
+        else if(k==="ArrowUp"){spin(1);e.preventDefault();}else if(k==="ArrowDown"){spin(-1);e.preventDefault();}
+        else if(k==="ArrowLeft"){cur=Math.max(0,cur-1);draw();e.preventDefault();}else if(k==="ArrowRight"){cur=Math.min(2,cur+1);draw();e.preventDefault();}
+        else if(k==="Backspace"){cur=Math.max(0,cur-1);draw();e.preventDefault();}
+        else if(k==="Enter"&&(document.activeElement===pk||document.activeElement===document.body)){$("lbSend").click();e.preventDefault();}
+      }
+      document.removeEventListener("keydown",window.__lbKey||function(){});window.__lbKey=onKey;document.addEventListener("keydown",onKey);
+      setTimeout(function(){if($("lbPick"))pk.focus({preventScroll:true});},120);
       $("lbSend").onclick=function(){
-        var n=cleanName(inp.value),msg=$("lbMsg");msg.className="lbmsg";
-        if(!n){msg.textContent="Type 1 to 8 letters or numbers.";msg.className="lbmsg err";return;}
-        if(isProfane(n)){msg.textContent="Please pick a different name.";msg.className="lbmsg err";return;}
+        var n=cleanName(L.join("")),msg=$("lbMsg");msg.className="lbmsg";
+        if(!n){msg.textContent="Use 3 letters, A to Z.";msg.className="lbmsg err";return;}
+        if(isProfane(n)){msg.textContent="Those initials aren't allowed. Try another set.";msg.className="lbmsg err";return;}
         $("lbSend").disabled=true;msg.textContent="Sending…";
         var body=JSON.stringify({v:1,a:run.a,n:n,s:run.s,t:run.t,r:run.r,o:run.o,c:run.c});
-        fetch(LB_POST,{method:"POST",body:body}).then(function(r){if(!r.ok)throw 0;
+        fetch(LB_POST,{method:"POST",body:body}).then(function(r){if(!r.ok)throw 0;sent=true;
           save.lbName=n;save.pending=(save.pending||[]);save.pending.push({a:run.a,n:n,s:run.s,t:run.t,ts:Date.now()});persist();
-          msg.textContent="Sent! "+n+" will show on the board within about 15 minutes.";inp.disabled=true;
+          msg.textContent="Sent! "+n+" will show on the board within about 15 minutes.";pk.setAttribute("aria-disabled","true");
         }).catch(function(){msg.textContent="Couldn't send right now. Try again.";msg.className="lbmsg err";$("lbSend").disabled=false;});
       };}
   });
