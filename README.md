@@ -12,7 +12,14 @@ Pick your transit agency, drive one route, pick up riders on schedule, and stop 
 - Faster driving drains the battery faster. Stop in the **green box** under the charger and **hold CHARGE** (or ↓ / C) to lower the pantograph and charge.
 - Reach the terminal. Your score adds up riders, on-time bonuses, charge left, and a time bonus. Run out of battery and your run is over.
 
-High scores are saved per agency in your browser. Nothing is sent anywhere.
+Your best score for each agency is saved in your browser.
+
+## Global leaderboard
+Finished runs that make an agency's top 10 can be submitted with initials (up to 8 letters or numbers).
+- The game posts the run (agency, name, score, time, riders, on-time count, charge left) to a public [ntfy.sh](https://ntfy.sh) topic. No account or key is needed.
+- `.github/workflows/leaderboard.yml` runs every few minutes. `scripts/leaderboard.mjs` drops names that fail the word filter and scores the run's own numbers can't add up to, keeps one spot per name per agency, and commits the top 10 per agency to `leaderboard.json`.
+- The game reads `leaderboard.json`, so new scores show up within about 5 to 15 minutes. ntfy.sh keeps messages for 12 hours, so the Action has to run at least that often.
+- To remove an entry, edit `leaderboard.json` and commit.
 
 The whole game is one self-contained `index.html`. All art is drawn in code and all sound is generated in the browser. Agency names are used for fun, and this game is not affiliated with any transit agency.
 

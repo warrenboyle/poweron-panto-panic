@@ -38,6 +38,25 @@ footer a,.fine a{color:var(--go);text-decoration:none}
 @keyframes glow{from{box-shadow:0 6px 0 var(--ink),0 0 0 0 rgba(102,204,0,.7)}to{box-shadow:0 6px 0 var(--ink),0 0 0 9px rgba(102,204,0,0)}}
 .copied{display:block;height:20px;font-weight:900;font-size:14px;color:var(--blue);margin-top:4px;opacity:0;transition:opacity .2s}
 .copied.on{opacity:1}
+.lbbox{margin-top:10px;background:#eef4ff;border:3px solid var(--ink);border-radius:14px;padding:10px 12px;font-weight:800;font-size:14px}
+.lbbox p{margin:0 0 6px}
+.lbform{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.lbform input{font:inherit;font-weight:900;font-size:20px;letter-spacing:2px;text-transform:uppercase;width:150px;padding:6px 10px;border:3px solid var(--ink);border-radius:10px;text-align:center}
+.lbform button,.lblink{font-weight:900;font-size:16px;padding:8px 14px;border:3px solid var(--ink);border-radius:10px;background:var(--go);color:var(--ink);box-shadow:0 4px 0 var(--ink)}
+.lblink{background:#fff;margin-top:6px}
+.lbmsg{min-height:18px;margin-top:6px;color:var(--blue)}
+.lbmsg.err{color:#c22}
+#lb{z-index:20;position:fixed}
+#lb .card{width:min(560px,100%)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:6px 0 10px}
+.tabs button{font-weight:900;font-size:13px;padding:5px 10px;border:3px solid var(--ink);border-radius:999px;background:#fff}
+.tabs button.on{background:var(--ink);color:var(--go)}
+.lbt td:first-child{width:36px;color:var(--muted)}
+.lbt td.nm{font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:1px}
+.lbt tr.me td{background:#e7ffd1}
+.lbt tr.pend td{color:var(--muted);font-style:italic}
+.lbnote{font-size:12px;color:var(--muted);font-weight:700;margin:8px 0 0}
+.lbbtn{font-weight:900;font-size:17px;background:var(--go);border:4px solid var(--ink);border-radius:999px;padding:8px 18px;box-shadow:0 5px 0 var(--ink)}
 .title em{font-style:normal;display:block;font-size:.6em;letter-spacing:3px;color:#fff}
 #titleArt{width:min(560px,92vw);aspect-ratio:2/1;image-rendering:pixelated;image-rendering:crisp-edges;border:5px solid var(--ink);border-radius:18px;box-shadow:0 8px 0 var(--ink);margin-top:18px;background:#7fd0ff}
 .tag{font-weight:900;color:#fff;font-size:clamp(16px,3.6vw,20px);text-align:center;margin:18px 6px 4px;text-shadow:0 2px 0 var(--ink),2px 0 0 var(--ink),-2px 0 0 var(--ink),0 -2px 0 var(--ink)}
@@ -143,6 +162,7 @@ h2.pick{margin:6px 0 12px;font-size:clamp(24px,5vw,34px);font-weight:900;color:#
       <li>Reach the terminal for a charge bonus and a time bonus. Run out of battery and your run is over.</li>
     </ol>
   </div>
+  <div class="row"><button class="lbbtn" id="lbOpen">🏆 Global leaderboard</button></div>
   <div class="row"><button class="big plain" id="backTitle">Back</button></div>
   <p class="fine">Agency names are used for fun. This game is not affiliated with any transit agency.</p>
   <footer>Made by the intern</footer>
@@ -167,6 +187,7 @@ h2.pick{margin:6px 0 12px;font-size:clamp(24px,5vw,34px);font-weight:900;color:#
   <div class="ov" id="res"><div class="card" id="resCard"></div></div>
 </div>
 
+<div class="ov" id="lb" role="dialog" aria-label="Global leaderboard"><div class="card"><h3>🏆 Top 10</h3><div class="tabs" id="lbTabs"></div><div id="lbList"></div><p class="lbnote" id="lbNote"></p><div class="row"><button class="big plain" id="lbClose">Close</button></div></div></div>
 <script>
 (function(){
 "use strict";
@@ -202,7 +223,7 @@ var DUE=[5,11,18,27,33,39];          /* scheduled arrival (seconds after GO), tu
 var VMAX=116, ACC=60, BRK=100, ROLL=26;
 var START_BAT=72, CHG_RATE=24;        /* % per second while the panto is down */
 var LS="ppp.v1", save={muted:false,best:{}};
-try{var s0=JSON.parse(localStorage.getItem(LS)||"null");if(s0&&typeof s0==="object"){save.muted=!!s0.muted;save.best=s0.best||{};}}catch(e){}
+try{var s0=JSON.parse(localStorage.getItem(LS)||"null");if(s0&&typeof s0==="object"){save.muted=!!s0.muted;save.best=s0.best||{};save.lbName=s0.lbName||"";save.pending=s0.pending||[];}}catch(e){}
 function persist(){try{localStorage.setItem(LS,JSON.stringify(save));}catch(e){}}
 
 /* ================= HELPERS ================= */
@@ -424,7 +445,7 @@ function finish(){
   var chgB=Math.round(S.bat)*2,timeB=Math.max(0,Math.round((60-S.t)*20)),ovP=over?-50:0;
   var late=S.t-DUE[5];
   var termB=late<-3?0:late<=2?150:late<=5?50:0;
-  S.finish.chgB=chgB;S.finish.timeB=timeB;S.finish.ovP=ovP;S.finish.termB=termB;
+  S.finish.chgB=chgB;S.finish.c=Math.round(S.bat);S.finish.timeB=timeB;S.finish.ovP=ovP;S.finish.termB=termB;
   S.score+=chgB+timeB+ovP+termB;S.ptsOn+=termB;S.ptsPen+=ovP;
   if(termB===150)S.ontime++;
   SFX.chime();setTimeout(SFX.fanfare,500);pop(S.x-30,104,over?"OVERSHOT -50":"TERMINAL!","#ffd23f",true);
@@ -632,12 +653,13 @@ function showResult(ok){
        row("Riders picked up",S.riders+"/"+tot)+row("Score so far","★ "+S.score)+"</table><div class='best2'>Finish the route to set a record.</div>";
   }
   if(ok)h+="<button class='share"+(rec?" hot":"")+"' id='shareBtn'>"+(rec?"🏆 Share your new record":"📣 Share score")+"</button><span class='copied' id='copied' role='status'></span>";
+  if(ok)h+="<div class='lbbox' id='lbbox'>Checking the global leaderboard…</div>";
   h+="<div class='row'><button class='big' id='again'>Drive again</button><button class='big plain' id='chAg'>Change agency</button></div>";
   if(ok)h+="<a class='pwr' href='https://www.poweronenergy.ca/' target='_blank' rel='noopener'><span>Powered by</span><img src='poweron-logo.webp' alt='PowerON Energy Solutions'></a>";
   else h+="<p class='juice'>Out of juice! Next time, charge up with PowerON.</p><a class='pwr pwr2' href='https://www.poweronenergy.ca/' target='_blank' rel='noopener'><img src='poweron-logo.webp' alt='PowerON Energy Solutions'></a>";
   c.innerHTML=h;$("res").classList.add("on");
   $("again").onclick=function(){startGame(ag);};$("chAg").onclick=quitToAgencies;
-  if(ok){var info={score:S.score,ag:ag,t:S.t,riders:S.riders,tot:tot,ontime:S.ontime,rec:rec};shareFile=null;makeCard(info);$("shareBtn").onclick=function(){shareScore(info);};}
+  if(ok){var info={score:S.score,ag:ag,t:S.t,riders:S.riders,tot:tot,ontime:S.ontime,rec:rec};shareFile=null;makeCard(info);$("shareBtn").onclick=function(){shareScore(info);};lbResult({a:ag.id,s:S.score,t:Math.round(S.t*10)/10,r:S.riders,o:S.ontime,c:S.finish.c});}
   setTimeout(function(){$("again").focus();},50);
 }
 /* ================= SHARE ================= */
@@ -702,6 +724,60 @@ $("backTitle").onclick=function(){show("title");};
 $("muteT").onclick=function(){unlock();setMuted(!save.muted);};
 $("muteG").onclick=function(){unlock();setMuted(!save.muted);};
 $("quitG").onclick=quitToAgencies;
+/* ================= GLOBAL LEADERBOARD =================
+   Scores are posted to a public ntfy.sh topic. A GitHub Action (scripts/leaderboard.mjs) checks them
+   every few minutes (name filter + score sanity limits) and commits leaderboard.json, which we read here. */
+var LB_POST="https://ntfy.sh/poweron-panto-panic-scores-7f3k9q";
+var LB_SRC=["https://raw.githubusercontent.com/warrenboyle/poweron-panto-panic/main/leaderboard.json","leaderboard.json"];
+var LB=null,lbTab=null;
+var BAD_SUB=["FUCK","FUK","FCK","SHIT","SHT","CUNT","BITCH","BICH","COCK","PUSSY","FAG","NIGG","NIGA","NIGR","KIKE","CHINK","SLUT","WHORE","HOR3","RAPE","NAZI","HITLER","TWAT","WANK","DICK","PENIS","VAGINA","ANUS","BOOB","TITS","JIZZ","PORN","KKK","RETARD","DYKE","TRANNY","BASTARD","PISS","CUM","SEX","ANAL","HEIL","KYS"];
+var BAD_EXACT=["ASS","ARSE","FU","STFU","WTF","GAY","SPIC","HO","HOE","TIT","POO","DIE","KILL","666","69","420"];
+function cleanName(raw){var n=String(raw||"").toUpperCase().replace(/[^A-Z0-9 ]/g,"").replace(/\s+/g," ").trim().slice(0,8);return n.length?n:null;}
+function isProfane(n){var f=n.replace(/ /g,""),l=f.replace(/0/g,"O").replace(/1/g,"I").replace(/3/g,"E").replace(/4/g,"A").replace(/5/g,"S").replace(/7/g,"T").replace(/8/g,"B").replace(/9/g,"G");
+  return [f,l,l.replace(/I/g,"L"),l.replace(/(.)\1+/g,"$1")].some(function(x){return BAD_EXACT.indexOf(x)>=0||BAD_SUB.some(function(b){return x.indexOf(b)>=0;});});}
+function loadLB(cb){var i=0;(function next(){if(i>=LB_SRC.length){cb(null);return;}var u=LB_SRC[i++]+"?t="+Date.now();
+  fetch(u,{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(j){if(!j||!j.boards)throw 0;LB=j;cb(j);}).catch(next);})();}
+function pendingFor(a){var now=Date.now();save.pending=(save.pending||[]).filter(function(p){return now-p.ts<3600e3;});
+  var b=(LB&&LB.boards[a])||[];return save.pending.filter(function(p){return p.a===a&&!b.some(function(e){return e.n===p.n&&e.s>=p.s;});});}
+function boardRows(a,hl){var b=((LB&&LB.boards[a])||[]).map(function(e){return {n:e.n,s:e.s,t:e.t};});
+  pendingFor(a).forEach(function(p){b.push({n:p.n,s:p.s,t:p.t,pend:true});});
+  b.sort(function(x,y){return y.s-x.s||x.t-y.t;});return b.slice(0,10);}
+function esc(x){return String(x).replace(/[&<>"']/g,function(c){return "&#"+c.charCodeAt(0)+";";});}
+function renderLB(){
+  $("lbTabs").innerHTML=AG.map(function(ag){return "<button data-a='"+ag.id+"' class='"+(ag.id===lbTab?"on":"")+"'>"+esc(ag.short)+"</button>";}).join("");
+  [].forEach.call($("lbTabs").querySelectorAll("button"),function(b){b.onclick=function(){lbTab=b.getAttribute("data-a");renderLB();};});
+  var rows=boardRows(lbTab),me=save.lbName;
+  $("lbList").innerHTML=!LB&&!rows.length?"<p class='sub'>Couldn't load the leaderboard. Try again in a minute.</p>":rows.length?"<table class='lbt'>"+rows.map(function(e,i){return "<tr class='"+(e.pend?"pend":"")+(me&&e.n===me?" me":"")+"'><td>"+(i+1)+"</td><td class='nm'>"+esc(e.n)+(e.pend?" (pending)":"")+"</td><td>"+e.t.toFixed(1)+"s</td><td>★ "+e.s.toLocaleString("en-US")+"</td></tr>";}).join("")+"</table>":"<p class='sub'>No scores yet. Be the first!</p>";
+  var up=LB&&LB.updated?Math.max(0,Math.round((Date.now()-Date.parse(LB.updated))/60000)):null;
+  $("lbNote").textContent="New scores are checked and added every few minutes."+(up!=null?" Last update: "+(up<1?"just now":up<120?up+" min ago":Math.round(up/60)+" h ago")+".":"");
+}
+function openLB(a){lbTab=a||lbTab||"wpg";$("lb").classList.add("on");renderLB();loadLB(function(){renderLB();});}
+$("lbOpen").onclick=function(){openLB(null);};
+$("lbClose").onclick=function(){$("lb").classList.remove("on");};
+function lbResult(run){
+  var box=$("lbbox");if(!box)return;var ag=AG.filter(function(x){return x.id===run.a;})[0];
+  loadLB(function(j){
+    if(!$("lbbox"))return;
+    var b=j?j.boards[run.a]||[]:[],cut=b.length<10?0:b[b.length-1].s,qual=!j||run.s>cut;
+    var h=qual?"<p>🏆 "+(j?"That's a top-10 score for "+esc(ag.short)+"!":"Add your score to the "+esc(ag.short)+" leaderboard:")+" Enter your initials:</p>"+
+      "<div class='lbform'><input id='lbName' maxlength='8' autocomplete='nickname' autocapitalize='characters' spellcheck='false' placeholder='ABC' aria-label='Your initials or short name' value='"+esc(save.lbName||"")+"'><button id='lbSend'>Submit</button></div><div class='lbmsg' id='lbMsg'></div>"
+      :"<p>Top 10 for "+esc(ag.short)+" starts at ★ "+cut.toLocaleString("en-US")+".</p>";
+    h+="<button class='lblink' id='lbView'>View "+esc(ag.short)+" top 10</button>";
+    box.innerHTML=h;$("lbView").onclick=function(){openLB(run.a);};
+    if(qual){var inp=$("lbName");inp.addEventListener("keydown",function(e){e.stopPropagation();if(e.key==="Enter")$("lbSend").click();});
+      $("lbSend").onclick=function(){
+        var n=cleanName(inp.value),msg=$("lbMsg");msg.className="lbmsg";
+        if(!n){msg.textContent="Type 1 to 8 letters or numbers.";msg.className="lbmsg err";return;}
+        if(isProfane(n)){msg.textContent="Please pick a different name.";msg.className="lbmsg err";return;}
+        $("lbSend").disabled=true;msg.textContent="Sending…";
+        var body=JSON.stringify({v:1,a:run.a,n:n,s:run.s,t:run.t,r:run.r,o:run.o,c:run.c});
+        fetch(LB_POST,{method:"POST",body:body}).then(function(r){if(!r.ok)throw 0;
+          save.lbName=n;save.pending=(save.pending||[]);save.pending.push({a:run.a,n:n,s:run.s,t:run.t,ts:Date.now()});persist();
+          msg.textContent="Sent! "+n+" will show on the board within about 15 minutes.";inp.disabled=true;
+        }).catch(function(){msg.textContent="Couldn't send right now. Try again.";msg.className="lbmsg err";$("lbSend").disabled=false;});
+      };}
+  });
+}
 renderMute();buildCards();
 /* read-only peek for automated tests */
 window.PPP={state:function(){return S&&{mode:S.mode,t:S.t,x:S.x,v:S.v,bat:S.bat,score:S.score,panto:S.panto,charging:S.charging,riders:S.riders,
