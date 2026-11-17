@@ -1,6 +1,6 @@
 {
- "updated": "2026-11-17T22:02:10.687Z",
- "cursor": "NgiHyQcGnUc7",
+ "updated": "2026-11-17T22:06:06.556Z",
+ "cursor": "P0SCNPMnniBx",
  "boards": {
   "wpg": [],
   "ttc": [],
@@ -22,5 +22,10 @@
   "oc": [],
   "yyc": []
  },
- "recent": []
+ "recent": [
+  {
+   "k": "verify24006",
+   "r": "rejected"
+  }
+ ]
 }
