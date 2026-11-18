@@ -1,8 +1,14 @@
 {
- "updated": "2026-11-17T23:36:29.209Z",
- "cursor": "H1XXtVUMExOj",
+ "updated": "2026-11-18T00:03:48.220Z",
+ "cursor": "Ej0POgDCwFsD",
  "boards": {
   "wpg": [
+   {
+    "n": "CMM",
+    "s": 1801,
+    "t": 43.3,
+    "d": "2026-11-18"
+   },
    {
     "n": "DKK",
     "s": 1707,
@@ -162,6 +168,10 @@
   },
   {
    "k": "q5cpa2qqzp6y",
+   "r": "added"
+  },
+  {
+   "k": "73ug4cu7y2wa",
    "r": "added"
   }
  ]
