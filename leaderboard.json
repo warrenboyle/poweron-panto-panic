@@ -1,6 +1,6 @@
 {
- "updated": "2026-11-19T19:53:20.308Z",
- "cursor": "CsIZCQjv4NyJ",
+ "updated": "2026-11-19T19:54:21.843Z",
+ "cursor": "4fNvlIDt8qmS",
  "boards": {
   "wpg": [
    {
@@ -566,6 +566,10 @@
   },
   {
    "k": "vyvmw4hyxgns",
+   "r": "low"
+  },
+  {
+   "k": "7qvyna1uxg2s",
    "r": "low"
   }
  ]
